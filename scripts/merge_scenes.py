@@ -77,6 +77,7 @@ def _pyav_concat(inputs: list[Path], output: Path) -> bool:
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(str(raw_out), fourcc, fps, (w, h))
 
+    bg_bgr = (215, 235, 245) # #F5EBD7 warm paper
     total_frames = 0
     for inp in inputs:
         cap = cv2.VideoCapture(str(inp))
@@ -84,9 +85,19 @@ def _pyav_concat(inputs: list[Path], output: Path) -> bool:
             ret, frame = cap.read()
             if not ret or frame is None:
                 break
-            if frame.shape[1] != w or frame.shape[0] != h:
-                frame = cv2.resize(frame, (w, h), interpolation=cv2.INTER_LINEAR)
-            writer.write(frame)
+            fh, fw = frame.shape[:2]
+            if fw == w and fh == h:
+                out_frame = frame
+            else:
+                scale = min(w / fw, h / fh)
+                nw = int(round(fw * scale))
+                nh = int(round(fh * scale))
+                resized = cv2.resize(frame, (nw, nh), interpolation=cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR)
+                out_frame = np.full((h, w, 3), bg_bgr, dtype=np.uint8)
+                ox = (w - nw) // 2
+                oy = (h - nh) // 2
+                out_frame[oy:oy+nh, ox:ox+nw] = resized
+            writer.write(out_frame)
             total_frames += 1
         cap.release()
 

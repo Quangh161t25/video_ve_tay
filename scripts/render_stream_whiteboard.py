@@ -80,17 +80,45 @@ class RegionStreamRenderer:
         self.ann = annotation
         self.canvas_bgr = sr._hex_to_bgr(cfg.canvas_hex)
 
-        # 输出尺寸：长边限到 cap，对齐到 grid_edge 的偶数倍（编码要求偶数）
         h0, w0 = image_bgr.shape[:2]
-        scale = cfg.cap_long_edge / max(h0, w0)
-        align = cfg.grid_edge if cfg.grid_edge % 2 == 0 else cfg.grid_edge * 2
-        w = max(align, (int(round(w0 * scale)) // align) * align)
-        h = max(align, (int(round(h0 * scale)) // align) * align)
-        self.out_w, self.out_h = w, h
+        ar_mode = getattr(cfg, "aspect_ratio", "auto")
+        target_w, target_h = None, None
+        if ar_mode == "9:16":
+            target_h = cfg.cap_long_edge
+            target_w = int(round(target_h * 9 / 16))
+        elif ar_mode == "16:9":
+            target_w = cfg.cap_long_edge
+            target_h = int(round(target_w * 9 / 16))
+        elif ar_mode == "1:1":
+            target_w = cfg.cap_long_edge
+            target_h = cfg.cap_long_edge
+        elif ar_mode == "4:5":
+            target_h = cfg.cap_long_edge
+            target_w = int(round(target_h * 4 / 5))
+
+        if target_w and target_h:
+            target_w = max(2, (target_w // 2) * 2)
+            target_h = max(2, (target_h // 2) * 2)
+            self.out_w, self.out_h = target_w, target_h
+            scale = min(target_w / w0, target_h / h0)
+            nw = max(2, int(round(w0 * scale)))
+            nh = max(2, int(round(h0 * scale)))
+            resized = cv2.resize(image_bgr, (nw, nh), interpolation=cv2.INTER_AREA if scale < 1.0 else cv2.INTER_LINEAR)
+            canvas_img = np.full((target_h, target_w, 3), self.canvas_bgr, dtype=np.uint8)
+            ox = (target_w - nw) // 2
+            oy = (target_h - nh) // 2
+            canvas_img[oy:oy+nh, ox:ox+nw] = resized
+            image_bgr = canvas_img
+        else:
+            # Tự động chuẩn theo tỉ lệ gốc của ảnh (Original aspect ratio)
+            scale = cfg.cap_long_edge / max(h0, w0)
+            w = max(2, int(round(w0 * scale)) // 2 * 2)
+            h = max(2, int(round(h0 * scale)) // 2 * 2)
+            self.out_w, self.out_h = w, h
 
         # 标注画布坐标 → 输出坐标的缩放比
-        cw = annotation["canvas"]["width"]
-        ch = annotation["canvas"]["height"]
+        cw = annotation.get("canvas", {}).get("width") or w0
+        ch = annotation.get("canvas", {}).get("height") or h0
         self.sx = self.out_w / cw
         self.sy = self.out_h / ch
 
@@ -390,53 +418,100 @@ class RegionStreamRenderer:
             cur_ms += n * ms_per_frame
 
         try:
-            for idx, element in enumerate(elements):
-                reveal = element["reveal"]
-                start_ms = reveal["startMs"]
-                dur_ms = reveal["durationMs"]
-                fill_static(start_ms)
+            color_timing = getattr(cfg, "color_timing", "sync")
+            if color_timing == "after-all":
+                # Kiểu 2B: Vẽ toàn bộ nét phác thảo của tất cả các vùng trước, sau đó mới tô màu
+                color_tasks = []
+                for idx, element in enumerate(elements):
+                    reveal = element["reveal"]
+                    dur_ms = reveal["durationMs"]
+                    allowed = self._allowed_mask(element, elements[idx + 1:])
+                    # Dành thời gian vẽ nét
+                    ink_frames = max(1, round(dur_ms * 0.55 * cfg.fps / 1000))
+                    color_frames = max(1, round(dur_ms * 0.45 * cfg.fps / 1000))
 
-                allowed = self._allowed_mask(element, elements[idx + 1:])
-                ink_frames = max(1, round(dur_ms * cfg.ink_weight / weight_sum * cfg.fps / 1000))
-                color_frames = max(1, round(dur_ms * cfg.color_weight / weight_sum * cfg.fps / 1000))
-
-                if cfg.ink_path_mode == "skeleton":
-                    strokes = self._region_skeleton_strokes(allowed)
-                    if strokes:
-                        samples, pen_lifts = [], set()
-                        for si, stroke in enumerate(strokes):
-                            if si > 0:
-                                pen_lifts.add(len(samples))
-                            samples.extend(stroke)
-                        self._lay_ink(writer, ink_frames, samples, pen_lifts, allowed)
-                        centers = samples
+                    if cfg.ink_path_mode == "skeleton":
+                        strokes = self._region_skeleton_strokes(allowed)
+                        if strokes:
+                            samples, pen_lifts = [], set()
+                            for si, stroke in enumerate(strokes):
+                                if si > 0:
+                                    pen_lifts.add(len(samples))
+                                samples.extend(stroke)
+                            self._lay_ink(writer, ink_frames, samples, pen_lifts, allowed)
+                            centers = samples
+                        else:
+                            path = self._region_grid_path(allowed)
+                            samples, pen_lifts, _ = self._grid_plan(path) if path else ([], set(), [])
+                            self._lay_ink(writer, ink_frames, samples, pen_lifts, allowed)
+                            centers = [self._cell_center(c) for c in path]
                     else:
                         path = self._region_grid_path(allowed)
-                        samples, pen_lifts, _ = self._grid_plan(path) if path else ([], set(), [])
-                        self._lay_ink(writer, ink_frames, samples, pen_lifts, allowed)
-                        centers = [self._cell_center(c) for c in path]
-                else:
-                    path = self._region_grid_path(allowed)
-                    if path:
-                        samples, pen_lifts, sample_cell = self._grid_plan(path)
-                        # 块填充：随笔尖推进逐格铺满（保证文字/大块实心）
-                        self._lay_ink_grid(writer, ink_frames, samples, pen_lifts, sample_cell, path, allowed)
-                        centers = [self._cell_center(c) for c in path]
+                        if path:
+                            samples, pen_lifts, sample_cell = self._grid_plan(path)
+                            self._lay_ink_grid(writer, ink_frames, samples, pen_lifts, sample_cell, path, allowed)
+                            centers = [self._cell_center(c) for c in path]
+                        else:
+                            self._lay_ink(writer, ink_frames, [], set(), None, allowed)
+                            centers = []
+
+                    cur_ms += ink_frames * ms_per_frame
+                    color_tasks.append((allowed, color_frames, centers))
+
+                # Giai đoạn 2: Tô màu toàn bộ sau khi đã hoàn thành phác thảo
+                for allowed, color_frames, centers in color_tasks:
+                    if cfg.color_fill == "contour-wipe":
+                        self._wash_contour(writer, color_frames, allowed)
                     else:
-                        self._lay_ink(writer, ink_frames, [], set(), None, allowed)
-                        centers = []
+                        self._wash_brush(writer, color_frames, centers, allowed)
+                    cur_ms += color_frames * ms_per_frame
+            else:
+                # Kiểu 2A (hoặc mặc định): Vẽ tới đâu tô màu tới đó theo từng vùng
+                for idx, element in enumerate(elements):
+                    reveal = element["reveal"]
+                    start_ms = reveal["startMs"]
+                    dur_ms = reveal["durationMs"]
+                    fill_static(start_ms)
 
-                cur_ms += ink_frames * ms_per_frame
+                    allowed = self._allowed_mask(element, elements[idx + 1:])
+                    ink_frames = max(1, round(dur_ms * cfg.ink_weight / weight_sum * cfg.fps / 1000))
+                    color_frames = max(1, round(dur_ms * cfg.color_weight / weight_sum * cfg.fps / 1000))
 
-                if cfg.color_fill == "contour-wipe":
-                    self._wash_contour(writer, color_frames, allowed)
-                else:
-                    self._wash_brush(writer, color_frames, centers, allowed)
-                cur_ms += color_frames * ms_per_frame
+                    if cfg.ink_path_mode == "skeleton":
+                        strokes = self._region_skeleton_strokes(allowed)
+                        if strokes:
+                            samples, pen_lifts = [], set()
+                            for si, stroke in enumerate(strokes):
+                                if si > 0:
+                                    pen_lifts.add(len(samples))
+                                samples.extend(stroke)
+                            self._lay_ink(writer, ink_frames, samples, pen_lifts, allowed)
+                            centers = samples
+                        else:
+                            path = self._region_grid_path(allowed)
+                            samples, pen_lifts, _ = self._grid_plan(path) if path else ([], set(), [])
+                            self._lay_ink(writer, ink_frames, samples, pen_lifts, allowed)
+                            centers = [self._cell_center(c) for c in path]
+                    else:
+                        path = self._region_grid_path(allowed)
+                        if path:
+                            samples, pen_lifts, sample_cell = self._grid_plan(path)
+                            self._lay_ink_grid(writer, ink_frames, samples, pen_lifts, sample_cell, path, allowed)
+                            centers = [self._cell_center(c) for c in path]
+                        else:
+                            self._lay_ink(writer, ink_frames, [], set(), None, allowed)
+                            centers = []
+
+                    cur_ms += ink_frames * ms_per_frame
+
+                    if cfg.color_fill == "contour-wipe":
+                        self._wash_contour(writer, color_frames, allowed)
+                    else:
+                        self._wash_brush(writer, color_frames, centers, allowed)
+                    cur_ms += color_frames * ms_per_frame
 
             # 凝视：补到 total_ms，并确保结尾至少停留 0.5s 完整原图
             gaze_until = max(total_ms, cur_ms + 500)
-            # 最终帧显示完整原图（凝视）
             self.drawn[...] = self.color_img.astype(np.float32)
             fill_static(gaze_until)
         finally:
@@ -487,6 +562,10 @@ def _parse_args(argv=None):
                    help="笔迹路径: grid 网格(默认); skeleton 骨架追踪")
     p.add_argument("--color-fill", default="contour-wipe", choices=["contour-wipe", "brush"],
                    help="上色: contour-wipe 轮廓扫描(默认); brush 沿轨迹刷")
+    p.add_argument("--color-timing", default="sync", choices=["sync", "after-all"],
+                   help="上色时机: sync 随画随上色; after-all 画完所有线稿后再全局上色")
+    p.add_argument("--aspect-ratio", default="auto", choices=["auto", "original", "9:16", "16:9", "1:1", "4:5"],
+                   help="输出比例: auto(原图比例) | 9:16 | 16:9 | 1:1 | 4:5")
     p.add_argument("--pause", default="heavy", choices=["heavy", "auto", "light", "off"],
                    help="起笔段停顿节奏（预留，逐区域画法下影响较弱）")
     p.add_argument("--fps", type=int, default=None)
@@ -509,6 +588,8 @@ def _build_cfg(args) -> sr.Config:
         kw["cap_long_edge"] = args.cap_long_edge
     kw["ink_path_mode"] = args.ink_path
     kw["color_fill"] = args.color_fill
+    kw["color_timing"] = args.color_timing
+    kw["aspect_ratio"] = args.aspect_ratio
     kw["pause_mode"] = args.pause
     return sr.Config(**kw)
 

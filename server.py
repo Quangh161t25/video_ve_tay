@@ -56,9 +56,10 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                 env = os.environ.copy()
                 env["PYTHONIOENCODING"] = "utf-8"
 
+                style_mode = data.get("style_mode", "photo_sync")
                 render_img_path = img_path
                 # Nếu người dùng chọn kiểu Phác thảo (Sketch)
-                if data.get("style_mode") == "sketch":
+                if style_mode == "sketch":
                     sketch_path = img_path.parent / f"{img_path.stem}_sketch.png"
                     subprocess.run([
                         str(venv_py),
@@ -69,6 +70,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     if sketch_path.exists():
                         render_img_path = sketch_path
 
+                color_timing = "after-all" if style_mode == "photo_after_all" else "sync"
+                aspect_ratio = data.get("aspect_ratio", "auto")
                 cmd = [
                     str(venv_py),
                     str(ROOT_DIR / "scripts" / "render_stream_whiteboard.py"),
@@ -78,6 +81,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     str(hand_path),
                     "--ink-path", data.get("ink_path", "grid"),
                     "--color-fill", data.get("color_fill", "contour-wipe"),
+                    "--color-timing", color_timing,
+                    "--aspect-ratio", aspect_ratio,
                     "--cap-long-edge", "960"
                 ]
                 
@@ -103,7 +108,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body)
                 scenes = data.get("scenes", [])
-                style_mode = data.get("style_mode", "photo")
+                style_mode = data.get("style_mode", "photo_sync")
+                aspect_ratio = data.get("aspect_ratio", "auto")
                 merge_all = data.get("merge", True)
                 
                 venv_py = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
@@ -149,6 +155,7 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         if sketch_path.exists():
                             render_img = sketch_path
                             
+                    color_timing = "after-all" if style_mode == "photo_after_all" else "sync"
                     cmd = [
                         str(venv_py),
                         str(ROOT_DIR / "scripts" / "render_stream_whiteboard.py"),
@@ -158,6 +165,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         str(hand_path),
                         "--ink-path", "grid",
                         "--color-fill", "contour-wipe",
+                        "--color-timing", color_timing,
+                        "--aspect-ratio", aspect_ratio,
                         "--cap-long-edge", "960"
                     ]
                     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)

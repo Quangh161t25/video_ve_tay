@@ -85,8 +85,16 @@
   <span class="spacer"></span>
   <span id="dirtyFlag" class="dirty"></span>
   <select id="styleModeSel" style="background:#1e293b;border-color:#3b82f6;color:#93c5fd;font-weight:600;padding:5px 8px;" title="Chọn chế độ xử lý ảnh">
-    <option value="sketch">✏️ Kiểu 1: Phác thảo nét vẽ (Sketch)</option>
-    <option value="photo" selected>📸 Kiểu 2: Vẽ ảnh thật (Không đốm trắng)</option>
+    <option value="sketch">✏️ Kiểu 1: Phác thảo nét vẽ (Sketch chì đen trắng)</option>
+    <option value="photo_sync" selected>📸 Kiểu 2A: Vẽ ảnh thật - Vẽ tới đâu tô màu tới đó (Từng vùng)</option>
+    <option value="photo_after_all">🎨 Kiểu 2B: Vẽ ảnh thật - Vẽ xong hết nét chì mới tô màu (Toàn tranh)</option>
+  </select>
+  <select id="aspectRatioSel" style="background:#1e293b;border-color:#3b82f6;color:#93c5fd;font-weight:600;padding:5px 8px;" title="Tỉ lệ khung hình video">
+    <option value="auto" selected>📐 Tỉ lệ: Theo ảnh gốc</option>
+    <option value="9:16">📱 9:16 (Dọc TikTok / Shorts)</option>
+    <option value="16:9">🖥️ 16:9 (Ngang YouTube)</option>
+    <option value="1:1">⬛ 1:1 (Vuông Feed)</option>
+    <option value="4:5">📱 4:5 (Dọc Insta)</option>
   </select>
   <button id="saveBtn" class="save" disabled>💾 Lưu</button>
   <button id="exportBrowserBtn" class="success" disabled title="Tải video mô phỏng của cảnh này">🎬 Xuất video Web</button>
@@ -282,30 +290,74 @@ function refreshSceneUI() {
   renderSceneStrip();
 }
 
+let dragSceneIdx = -1;
 function renderSceneStrip() {
   const strip = $('sceneStrip');
   if (!S.scenes.length) { strip.hidden = true; return; }
   strip.hidden = false;
   strip.innerHTML = S.scenes.map((s, i) => `
-    <div class="scene-tab ${i === S.idx ? 'active' : ''}" data-idx="${i}">
+    <div class="scene-tab ${i === S.idx ? 'active' : ''}" draggable="true" data-idx="${i}" title="Kéo thả để đổi thứ tự ảnh">
+      <span class="grip" style="cursor:grab;color:#64748b;margin-right:2px;">⋮⋮</span>
       <span>📸 ${i+1}. ${escapeHtml(s.name)}</span>
+      <span class="move-btns" style="display:inline-flex;gap:2px;margin-left:6px;">
+        <button class="arrow-btn" data-move="${i}:-1" ${i === 0 ? 'disabled' : ''} style="padding:0 4px;font-size:10px;background:#334155;border:none;border-radius:3px;" title="Dời ảnh sang trái">◀</button>
+        <button class="arrow-btn" data-move="${i}:1" ${i === S.scenes.length - 1 ? 'disabled' : ''} style="padding:0 4px;font-size:10px;background:#334155;border:none;border-radius:3px;" title="Dời ảnh sang phải">▶</button>
+      </span>
       <span class="del-btn" data-del="${i}" title="Xóa ảnh này khỏi danh sách">✕</span>
     </div>
   `).join('') + `<button id="stripAddBtn" style="padding:4px 9px;font-size:12px;background:#312e81;border-color:#4f46e5;">＋ Thêm ảnh</button>`;
 
   strip.querySelectorAll('.scene-tab').forEach(tab => {
+    const i = +tab.dataset.idx;
     tab.addEventListener('click', e => {
       if (e.target.dataset.del !== undefined) {
         e.stopPropagation();
         removeScene(+e.target.dataset.del);
+      } else if (e.target.dataset.move !== undefined) {
+        e.stopPropagation();
+        const [cur, dir] = e.target.dataset.move.split(':').map(Number);
+        reorderScenes(cur, cur + dir);
       } else {
-        loadScene(+tab.dataset.idx);
+        loadScene(i);
+      }
+    });
+
+    tab.addEventListener('dragstart', e => {
+      dragSceneIdx = i;
+      tab.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    tab.addEventListener('dragend', () => {
+      tab.style.opacity = '1';
+      strip.querySelectorAll('.scene-tab').forEach(t => t.style.outline = '');
+    });
+    tab.addEventListener('dragover', e => {
+      e.preventDefault();
+      tab.style.outline = '2px dashed #3b82f6';
+    });
+    tab.addEventListener('dragleave', () => {
+      tab.style.outline = '';
+    });
+    tab.addEventListener('drop', e => {
+      e.preventDefault();
+      tab.style.outline = '';
+      if (dragSceneIdx !== -1 && dragSceneIdx !== i) {
+        reorderScenes(dragSceneIdx, i);
       }
     });
   });
   
   const addBtn = $('stripAddBtn');
   if (addBtn) addBtn.addEventListener('click', () => $('multiImgInput').click());
+}
+
+function reorderScenes(fromIdx, toIdx) {
+  if (fromIdx < 0 || toIdx < 0 || fromIdx >= S.scenes.length || toIdx >= S.scenes.length || fromIdx === toIdx) return;
+  const item = S.scenes.splice(fromIdx, 1)[0];
+  S.scenes.splice(toIdx, 0, item);
+  refreshSceneUI();
+  loadScene(toIdx);
+  toast(`Đã đổi thứ tự ảnh sang vị trí #${toIdx + 1}`);
 }
 
 function removeScene(idx) {
@@ -393,8 +445,9 @@ function loadScene(i) {
   const img = new Image();
   img.onload = () => {
     S.source = img;
-    if (!sc.cfg) sc.cfg = { sceneId: sc.name, canvas: { width: img.naturalWidth, height: img.naturalHeight }, sceneDurationMs: 8000, elements: [] };
-    if (!sc.cfg.canvas || !sc.cfg.canvas.width) sc.cfg.canvas = { width: img.naturalWidth, height: img.naturalHeight };
+    const w = img.naturalWidth || 1080, h = img.naturalHeight || 1920;
+    if (!sc.cfg) sc.cfg = { sceneId: sc.name, canvas: { width: w, height: h }, sceneDurationMs: 8000, elements: [] };
+    sc.cfg.canvas = { width: w, height: h };
     if (!Array.isArray(sc.cfg.elements)) sc.cfg.elements = [];
     S.cfg = sc.cfg; S.cfgHandle = sc.cfgHandle;
     S.sketchCanvas = null;
@@ -775,7 +828,8 @@ async function exportPythonVideo() {
           annotationData: sc.cfg,
           imageDataBase64: sc.imageDataBase64 || null,
           sceneName: sc.name,
-          style_mode: $('styleModeSel').value
+          style_mode: $('styleModeSel').value,
+          aspect_ratio: $('aspectRatioSel').value
         })
       });
       const res = await resp.json();
@@ -792,10 +846,10 @@ async function exportPythonVideo() {
       toast('Lỗi kết nối server: ' + err.message, true);
     } finally {
       $('exportPythonBtn').disabled = false;
-      $('exportPythonBtn').textContent = '⚡ Render MP4 nét cao';
+      $('exportPythonBtn').textContent = '⚡ Render cảnh này';
     }
   } else {
-    alert(`💡 ĐỂ RENDER MP4 BẰNG 1 CÚ CLICK TRÊN WEB:\n\n1. Mở CMD gõ lệnh:\n   run_pipeline.bat web\n\n2. Trang web sẽ tự động mở ra. Bạn chỉ cần nhấn nút "Render MP4 nét cao" này là video tự động được tạo và tải về máy!\n\nHoặc chạy dòng lệnh CMD thủ công:\n   run_pipeline.bat render "${sc.imgName}" "${sc.cfgName}" "${sc.name}_whiteboard.mp4"`);
+    alert(`💡 ĐỂ RENDER MP4 BẰNG 1 CÚ CLICK TRÊN WEB:\n\n1. Mở CMD gõ lệnh:\n   run_pipeline.bat web\n\n2. Trang web sẽ tự động mở ra. Bạn chỉ cần nhấn nút "Render cảnh này" này là video tự động được tạo và tải về máy!\n\nHoặc chạy dòng lệnh CMD thủ công:\n   run_pipeline.bat render "${sc.imgName}" "${sc.cfgName}" "${sc.name}_whiteboard.mp4"`);
   }
 }
 
@@ -822,6 +876,7 @@ async function exportBatchVideo() {
             imageDataBase64: sc.imageDataBase64 || null
           })),
           style_mode: $('styleModeSel').value,
+          aspect_ratio: $('aspectRatioSel').value,
           merge: true
         })
       });

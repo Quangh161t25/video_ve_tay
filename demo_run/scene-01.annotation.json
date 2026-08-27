@@ -1,0 +1,41 @@
+﻿{
+  "sceneId": "scene-01",
+  "canvas": { "width": 1672, "height": 941 },
+  "storyBasis": "Trên đỉnh núi đá, khỉ con ngồi ăn chuối, khỉ lớn lao tới cướp chuối, các em nhỏ đứng xem thích thú.",
+  "sceneDurationMs": 8600,
+  "elements": [
+    {
+      "id": "left",
+      "label": "1. Núi đá & Khỉ con",
+      "sequence": 1,
+      "narrativeRole": "Mở đầu bối cảnh",
+      "subtitle": "Trên đỉnh núi đá, một chú khỉ con đang ngồi ăn chuối một cách vui vẻ.",
+      "type": "structure",
+      "region": { "x": 20, "y": 120, "width": 540, "height": 780 },
+      "reveal": { "direction": "top_to_bottom", "startMs": 300, "durationMs": 2600, "maskPaddingPx": 22, "protectedRegions": [] },
+      "handPath": { "start": [290, 130], "end": [290, 890], "easing": "easeInOut" }
+    },
+    {
+      "id": "center",
+      "label": "2. Khỉ lớn tranh cướp",
+      "sequence": 2,
+      "narrativeRole": "Hành động cao trào",
+      "subtitle": "Bất ngờ, một chú khỉ lớn xuất hiện và giật lấy quả chuối.",
+      "type": "character",
+      "region": { "x": 560, "y": 100, "width": 560, "height": 800 },
+      "reveal": { "direction": "top_to_bottom", "startMs": 3000, "durationMs": 2600, "maskPaddingPx": 22, "protectedRegions": [] },
+      "handPath": { "start": [840, 110], "end": [840, 890], "easing": "easeInOut" }
+    },
+    {
+      "id": "right",
+      "label": "3. Trẻ em cổ vũ",
+      "sequence": 3,
+      "narrativeRole": "Phản ứng & kết cục",
+      "subtitle": "Xung quanh, các em nhỏ đứng xem và reo hò thích thú.",
+      "type": "character",
+      "region": { "x": 1120, "y": 140, "width": 532, "height": 760 },
+      "reveal": { "direction": "top_to_bottom", "startMs": 5700, "durationMs": 2400, "maskPaddingPx": 22, "protectedRegions": [] },
+      "handPath": { "start": [1380, 150], "end": [1380, 880], "easing": "easeInOut" }
+    }
+  ]
+}

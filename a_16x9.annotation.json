@@ -1,0 +1,139 @@
+{
+  "sceneId": "scene-girl",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "storyBasis": "Chân dung cô gái đội mũ bảo hiểm, đeo khẩu trang và tạo dáng chữ V.",
+  "sceneDurationMs": 9400,
+  "elements": [
+    {
+      "id": "helmet_hair",
+      "label": "1. Mũ bảo hiểm & Mái tóc",
+      "sequence": 1,
+      "narrativeRole": "Phác thảo phần đầu và mũ",
+      "subtitle": "Cô gái đội chiếc mũ bảo hiểm màu xanh rêu cá tính.",
+      "type": "structure",
+      "region": {
+        "x": 486,
+        "y": 59,
+        "width": 953,
+        "height": 415
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 300,
+        "durationMs": 2000,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          962.5,
+          266.5
+        ],
+        "end": [
+          962.5,
+          474
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "eyes_mask",
+      "label": "2. Đôi mắt & Khẩu trang",
+      "sequence": 2,
+      "narrativeRole": "Chi tiết khuôn mặt",
+      "subtitle": "Đôi mắt to tròn cùng chiếc khẩu trang trắng.",
+      "type": "character",
+      "region": {
+        "x": 655.0789927604762,
+        "y": 335.73108564952025,
+        "width": 788,
+        "height": 360
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 2500,
+        "durationMs": 2200,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          1049.0789927604762,
+          515.7310856495203
+        ],
+        "end": [
+          1049.0789927604762,
+          695.7310856495203
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "hand_pose",
+      "label": "3. Bàn tay chữ V",
+      "sequence": 3,
+      "narrativeRole": "Hành động tạo dáng",
+      "subtitle": "Bàn tay tạo dáng chữ V dễ thương trước ống kính.",
+      "type": "character",
+      "region": {
+        "x": 480,
+        "y": 480,
+        "width": 450,
+        "height": 540
+      },
+      "reveal": {
+        "direction": "bottom_to_top",
+        "startMs": 4900,
+        "durationMs": 1800,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          650,
+          950
+        ],
+        "end": [
+          650,
+          520
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "region_4",
+      "label": "Vùng mới",
+      "sequence": 4,
+      "narrativeRole": "",
+      "type": "object",
+      "subtitle": "vẽ nốt",
+      "region": {
+        "x": 923,
+        "y": 703,
+        "width": 523,
+        "height": 324
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 6900,
+        "durationMs": 2000,
+        "maskPaddingPx": 22,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          1184.5,
+          865
+        ],
+        "end": [
+          1184.5,
+          1027
+        ],
+        "easing": "easeInOut"
+      }
+    }
+  ]
+}

@@ -17,6 +17,11 @@ import sys
 import tempfile
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 def _ffmpeg_concat_copy(inputs: list[Path], output: Path) -> bool:
     ffmpeg = shutil.which("ffmpeg")
@@ -53,34 +58,49 @@ def _ffmpeg_concat_copy(inputs: list[Path], output: Path) -> bool:
 
 def _pyav_concat(inputs: list[Path], output: Path) -> bool:
     try:
-        import av
-    except ImportError:
+        import cv2
+        script_dir = Path(__file__).resolve().parent
+        if str(script_dir) not in sys.path:
+            sys.path.insert(0, str(script_dir))
+        from stream_render import transcode_h264
+    except Exception as e:
+        print(f"  [warn] Khong the import cv2/transcode_h264: {e}")
         return False
-    import numpy as np  # noqa: F401
-    first = av.open(str(inputs[0]))
-    vs = first.streams.video[0]
-    w, h = vs.codec_context.width, vs.codec_context.height
-    rate = vs.average_rate
-    first.close()
 
-    out = av.open(str(output), mode="w")
-    ostream = out.add_stream("h264", rate=rate)
-    ostream.width, ostream.height = w, h
-    ostream.pix_fmt = "yuv420p"
-    ostream.options = {"crf": "24", "preset": "medium"}
-    for p in inputs:
-        cont = av.open(str(p))
-        for frame in cont.decode(video=0):
-            if frame.width != w or frame.height != h:
-                frame = frame.reformat(width=w, height=h)
-            for pkt in ostream.encode(frame):
-                out.mux(pkt)
-        cont.close()
-    for pkt in ostream.encode(None):
-        out.mux(pkt)
-    out.close()
-    print(f"  PyAV 拼接完成: {output}")
-    return True
+    cap0 = cv2.VideoCapture(str(inputs[0]))
+    fps = cap0.get(cv2.CAP_PROP_FPS) or 60.0
+    w = int(cap0.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap0.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    cap0.release()
+
+    raw_out = output.with_name(output.stem + "_raw.mp4")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(str(raw_out), fourcc, fps, (w, h))
+
+    total_frames = 0
+    for inp in inputs:
+        cap = cv2.VideoCapture(str(inp))
+        while True:
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                break
+            if frame.shape[1] != w or frame.shape[0] != h:
+                frame = cv2.resize(frame, (w, h), interpolation=cv2.INTER_LINEAR)
+            writer.write(frame)
+            total_frames += 1
+        cap.release()
+
+    writer.release()
+    try:
+        transcode_h264(raw_out, output)
+        print(f"  Ghep noi video hoan tat: {output}")
+        return True
+    except Exception as e:
+        print(f"  [err] Loi transcode sau khi ghep: {e}")
+        if raw_out.exists() and not output.exists():
+            shutil.move(str(raw_out), str(output))
+            return True
+        return False
 
 
 def main(argv=None) -> int:

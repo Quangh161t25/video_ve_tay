@@ -25,7 +25,13 @@ import datetime
 import json
 import math
 import sys
+import time
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 import cv2
 import numpy as np
@@ -90,17 +96,32 @@ class RegionStreamRenderer:
 
         self.color_img = cv2.resize(image_bgr, (self.out_w, self.out_h), interpolation=cv2.INTER_AREA)
         gray = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2GRAY)
-        self.thresh_map = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 10
-        )
-        self.grid_blocks = sr._to_grid_blocks(self.thresh_map, cfg.grid_edge)
-        self.active_all = sr._active_mask(self.thresh_map, cfg.grid_edge, cfg.ink_threshold)
-        self.ink_pixels = self.thresh_map < cfg.ink_threshold
-        self.ink_paint = np.repeat(self.thresh_map[:, :, None], 3, axis=2).astype(np.float32)
+        
+        # Tự động nhận diện ảnh chụp thật hoặc kích hoạt chế độ ảnh thật
+        hsv = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2HSV)
+        is_photo = getattr(cfg, "photo_mode", False) or np.mean(hsv[:, :, 1]) > 20 or np.std(self.color_img) > 40
+        
+        if is_photo:
+            smooth = cv2.bilateralFilter(self.color_img, 7, 50, 50)
+            p_gray = cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY)
+            edges = cv2.Canny(p_gray, 35, 110)
+            self.ink_pixels = edges > 0
+            self.thresh_map = np.where(edges > 0, 0, 255).astype(np.uint8)
+            self.grid_blocks = sr._to_grid_blocks(self.thresh_map, cfg.grid_edge)
+            self.active_all = sr._active_mask(self.thresh_map, cfg.grid_edge, 128)
+            # Nét chì màu xám đen mượt mà (không tạo đốm trắng)
+            self.ink_paint = np.full_like(self.color_img, 35, dtype=np.float32)
+        else:
+            self.thresh_map = cv2.adaptiveThreshold(
+                gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 10
+            )
+            self.grid_blocks = sr._to_grid_blocks(self.thresh_map, cfg.grid_edge)
+            self.active_all = sr._active_mask(self.thresh_map, cfg.grid_edge, cfg.ink_threshold)
+            self.ink_pixels = self.thresh_map < cfg.ink_threshold
+            self.ink_paint = np.repeat(self.thresh_map[:, :, None], 3, axis=2).astype(np.float32)
 
-        # 背景染成画布底色，让上色阶段背景与起笔一致（不碰墨迹）
-        if cfg.match_bg:
-            self._match_original_background()
+            if cfg.match_bg:
+                self._match_original_background()
 
         # 共享持久画布
         self.drawn = np.empty((self.out_h, self.out_w, 3), dtype=np.float32)
@@ -505,7 +526,7 @@ def main(argv=None) -> int:
         print(f"[err] 无法读取图片: {args.image}")
         return 1
     try:
-        annotation = json.loads(Path(args.annotation).read_text(encoding="utf-8"))
+        annotation = json.loads(Path(args.annotation).read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as e:
         print(f"[err] 无法读取标注: {e}")
         return 1

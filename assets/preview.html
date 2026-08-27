@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="vi">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SRT 白板动画 · 区域编辑器（无需服务器）</title>
+<title>Hoạt họa bảng trắng SRT · Trình chỉnh sửa phân vùng (Không cần Server)</title>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; background: #14161a; color: #e6e8ec; }
@@ -15,6 +15,10 @@
   button:hover { background: #313641; }
   button.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
   button.primary:hover { background: #2f6fe0; }
+  button.success { background: #059669; border-color: #059669; color: #fff; }
+  button.success:hover { background: #047857; }
+  button.save { background: #d97706; border-color: #d97706; color: #fff; }
+  button.save:hover { background: #b45309; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   select { background: #262a33; color: #e6e8ec; border: 1px solid #3a3f4a; border-radius: 6px; padding: 5px 10px; font-size: 14px; max-width: 320px; }
   .spacer { flex: 1; }
@@ -57,61 +61,82 @@
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #062; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 9; }
   .toast.show { opacity: 1; }
   .toast.err { background: #ef4444; color: #fff; }
+  .scene-strip { display: flex; align-items: center; gap: 8px; padding: 7px 16px; background: #161920; border-bottom: 1px solid #2a2e37; overflow-x: auto; white-space: nowrap; }
+  .scene-tab { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; background: #22262e; border: 1px solid #333842; border-radius: 6px; cursor: pointer; font-size: 12.5px; color: #cfd4dc; user-select: none; transition: all .15s; }
+  .scene-tab:hover { background: #2b303a; }
+  .scene-tab.active { background: #1e3a8a; border-color: #3b82f6; color: #fff; font-weight: 600; box-shadow: 0 0 10px rgba(59,130,246,0.3); }
+  .scene-tab .del-btn { color: #94a3b8; margin-left: 4px; font-weight: bold; border-radius: 4px; padding: 1px 4px; line-height: 1; }
+  .scene-tab .del-btn:hover { background: #ef4444; color: #fff; }
+  .drop-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.88); border: 4px dashed #3b82f6; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; pointer-events: none; opacity: 0; transition: opacity .15s; }
+  .drop-overlay.active { opacity: 1; }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="brand">SRT 白板 · 区域编辑器</div>
-  <button id="openBtn" class="primary">打开文件夹…</button>
+  <div class="brand">SRT Whiteboard</div>
+  <button id="uploadMultiBtn" class="primary" style="background:#4f46e5;border-color:#4f46e5;" title="Chọn 1 hoặc nhiều ảnh cùng lúc">🖼️ Chọn ảnh (Nhiều ảnh)…</button>
+  <input type="file" id="multiImgInput" multiple accept="image/png,image/jpeg,image/jpg" hidden>
+  <button id="openBtn" style="background:#2563eb;border-color:#2563eb;color:#fff;" title="Mở cả thư mục chứa ảnh">📁 Mở thư mục…</button>
   <button id="prevBtn" disabled>‹</button>
-  <select id="sceneSel" disabled></select>
+  <select id="sceneSel" disabled style="min-width:180px;"></select>
   <button id="nextBtn" disabled>›</button>
   <span id="sceneCount" class="muted"></span>
-  <label class="muted" style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="overlayToggle" checked> 区域框</label>
+  <label class="muted" style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="overlayToggle" checked> Khung phân vùng</label>
   <span class="spacer"></span>
   <span id="dirtyFlag" class="dirty"></span>
-  <button id="saveBtn" disabled>保存本场景</button>
-  <button id="saveAllBtn" class="primary" disabled>全部保存</button>
+  <select id="styleModeSel" style="background:#1e293b;border-color:#3b82f6;color:#93c5fd;font-weight:600;padding:5px 8px;" title="Chọn chế độ xử lý ảnh">
+    <option value="sketch">✏️ Kiểu 1: Phác thảo nét vẽ (Sketch)</option>
+    <option value="photo" selected>📸 Kiểu 2: Vẽ ảnh thật (Không đốm trắng)</option>
+  </select>
+  <button id="saveBtn" class="save" disabled>💾 Lưu</button>
+  <button id="exportBrowserBtn" class="success" disabled title="Tải video mô phỏng của cảnh này">🎬 Xuất video Web</button>
+  <button id="exportPythonBtn" class="primary" disabled title="Render MP4 cảnh này bằng Python">⚡ Render cảnh này</button>
+  <button id="exportBatchBtn" class="primary" style="background:#ea580c;border-color:#ea580c;font-weight:bold;" disabled title="Render TẤT CẢ các ảnh và tự động ghép thành 1 video duy nhất">⚡ Render TẤT CẢ ảnh (Ghép video)</button>
+</div>
+<div id="sceneStrip" class="scene-strip" hidden></div>
+<div id="dropOverlay" class="drop-overlay">
+  <div style="font-size:52px;margin-bottom:12px;">📥</div>
+  <div>Thả 1 hoặc NHIỀU ảnh vào đây để thêm vào danh sách</div>
 </div>
 
 <div class="body">
   <div class="stage-wrap">
     <div id="hint" class="hint">
-      点 <b>打开文件夹…</b> 选择存放线稿的目录（内含成对的 <code>&lt;名称&gt;.png</code> + <code>&lt;名称&gt;.annotation.json</code>）。<br><br>
-      载入后：默认显示完整图片和区域框；拖动方框整体移动、拖四角/四边缩放调 <code>region</code>；右侧精确改数值、方向、<b>开始/结束时间</b>与<b>字幕</b>；拖动模块列表可<b>调整顺序</b>。拖时间轴或按播放看<b>矩形代理揭示</b>（未开始区域不显示）。<br><br>
-      改完点 <b>保存本场景</b> / <b>全部保存</b> 写回原 <code>.annotation.json</code>（含每个区域的字幕）。<br>
-      <span class="muted">写回原文件需 Chrome / Edge（File System Access API）；其它浏览器将改为下载，请手动覆盖原文件。矩形代理只用于布局/时序；真实连续笔迹请用命令行 <code>render_stream_whiteboard.py</code> 渲染。</span>
+      Nhấn <b>Mở thư mục…</b> và chọn thư mục chứa các cặp tệp (gồm <code>&lt;tên_ảnh&gt;.png</code> + <code>&lt;tên_ảnh&gt;.annotation.json</code>).<br><br>
+      Sau khi tải: Mặc định hiển thị đầy đủ hình ảnh và các khung phân vùng; Kéo thả khung để di chuyển, kéo 4 góc/cạnh để đổi kích thước <code>region</code>; Cột bên phải cho phép chỉnh chính xác thông số, hướng vẽ, <b>thời gian bắt đầu / kết thúc</b> và <b>phụ đề</b>; Kéo thả danh sách khối vẽ để <b>đổi thứ tự</b>. Kéo thanh thời gian hoặc bấm Phát (Play) để xem <b>mô phỏng lộ nét vẽ</b> (các vùng chưa tới thời gian sẽ được ẩn hoàn toàn).<br><br>
+      Sau khi chỉnh xong nhấn <b>Lưu cảnh này</b> / <b>Lưu tất cả</b> để ghi đè vào tệp <code>.annotation.json</code> gốc.<br>
+      <span class="muted">Ghi đè trực tiếp yêu cầu Chrome / Edge (hỗ trợ File System Access API); các trình duyệt khác sẽ tự động tải file JSON về. Trình mô phỏng ở đây dùng để căn bố cục và thời gian; nét vẽ liên tục thực tế sẽ được render qua lệnh <code>render_stream_whiteboard.py</code>.</span>
     </div>
     <canvas id="canvas" hidden></canvas>
   </div>
   <aside class="side" id="side" hidden>
-    <h3>绘制模块 <span id="elemCount" class="muted"></span></h3>
-    <p class="tip muted">拖动列表项可调整绘制顺序</p>
+    <h3>Khối phân vùng vẽ <span id="elemCount" class="muted"></span></h3>
+    <p class="tip muted">Kéo thả mục trong danh sách để đổi thứ tự vẽ</p>
     <ul id="elist" class="elist"></ul>
     <div class="row-btns">
-      <button id="addBtn">＋ 新增模块</button>
-      <button id="delBtn" disabled>删除选中</button>
+      <button id="addBtn">＋ Thêm vùng mới</button>
+      <button id="delBtn" disabled>Xóa vùng chọn</button>
     </div>
-    <h3>选中模块</h3>
+    <h3>Thông số vùng đang chọn</h3>
     <div class="fields" id="fields">
-      <label>名称</label><input type="text" id="f_label" disabled>
-      <label>x</label><input type="number" id="f_x" min="0" disabled>
-      <label>y</label><input type="number" id="f_y" min="0" disabled>
-      <label>宽</label><input type="number" id="f_w" min="1" disabled>
-      <label>高</label><input type="number" id="f_h" min="1" disabled>
-      <label>方向</label>
+      <label>Tên vùng</label><input type="text" id="f_label" disabled>
+      <label>Tọa độ X</label><input type="number" id="f_x" min="0" disabled>
+      <label>Tọa độ Y</label><input type="number" id="f_y" min="0" disabled>
+      <label>Chiều rộng</label><input type="number" id="f_w" min="1" disabled>
+      <label>Chiều cao</label><input type="number" id="f_h" min="1" disabled>
+      <label>Hướng vẽ</label>
       <select id="f_dir" disabled>
-        <option value="top_to_bottom">从上至下</option>
-        <option value="bottom_to_top">从下至上</option>
-        <option value="left_to_right">从左至右</option>
-        <option value="right_to_left">从右至左</option>
+        <option value="top_to_bottom">Từ trên xuống dưới</option>
+        <option value="bottom_to_top">Từ dưới lên trên</option>
+        <option value="left_to_right">Từ trái sang phải</option>
+        <option value="right_to_left">Từ phải sang trái</option>
       </select>
-      <label>开始(ms)</label><input type="number" id="f_start" min="0" step="100" disabled>
-      <label>结束(ms)</label><input type="number" id="f_end" min="0" step="100" disabled>
-      <label>时长(ms)</label><input type="number" id="f_dur" disabled>
+      <label>Bắt đầu (ms)</label><input type="number" id="f_start" min="0" step="100" disabled>
+      <label>Kết thúc (ms)</label><input type="number" id="f_end" min="0" step="100" disabled>
+      <label>Thời lượng (ms)</label><input type="number" id="f_dur" disabled>
     </div>
-    <h3>字幕</h3>
-    <textarea id="f_sub" rows="3" placeholder="该区域对应的字幕（保存进 annotation.json）" disabled></textarea>
+    <h3>Phụ đề / Lời thoại</h3>
+    <textarea id="f_sub" rows="3" placeholder="Phụ đề tương ứng với vùng này (sẽ lưu vào annotation.json)" disabled></textarea>
     <ul id="sublist" class="sublist"></ul>
   </aside>
 </div>
@@ -135,7 +160,7 @@ const hand = new Image(); hand.src = './drawing-hand.png';
 
 const S = { scenes: [], idx: -1, cfg: null, cfgHandle: null, dirHandle: null,
             source: null, paper: '#fdf0d0', time: 0, sel: 0, playing: false, last: 0,
-            showOverlay: true, dirty: new Set(), drag: null, dragRow: -1 };
+            showOverlay: true, dirty: new Set(), drag: null, dragRow: -1, isExporting: false };
 
 const els = () => S.cfg ? S.cfg.elements : [];
 const endMs = e => e.reveal.startMs + e.reveal.durationMs;
@@ -145,7 +170,162 @@ function totalMs() {
   return Math.max(S.cfg && S.cfg.sceneDurationMs || 0, maxEnd + 500, 1000);
 }
 
-// ---------- 打开文件夹 ----------
+// ---------- Tải ảnh (Nhiều ảnh) & Kéo thả trực quan ----------
+$('uploadMultiBtn').addEventListener('click', () => $('multiImgInput').click());
+$('multiImgInput').addEventListener('change', e => {
+  if (e.target.files && e.target.files.length > 0) {
+    loadMultipleFiles([...e.target.files]);
+  }
+});
+
+const dropOverlay = $('dropOverlay');
+let dragCounter = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; dropOverlay.classList.add('active'); });
+window.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); } });
+window.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+window.addEventListener('drop', async e => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('active');
+  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    const imgFiles = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+    if (imgFiles.length > 0) loadMultipleFiles(imgFiles);
+    else toast('Vui lòng kéo thả tệp hình ảnh (.png, .jpg, .jpeg)', true);
+  }
+});
+
+async function loadMultipleFiles(fileList) {
+  const newScenes = [];
+  toast(`Đang nạp ${fileList.length} ảnh vào danh sách...`, false);
+  
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i];
+    const base = file.name.replace(/\.[^/.]+$/, "");
+    const dataUrl = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = ev => res(ev.target.result);
+      reader.readAsDataURL(file);
+    });
+    
+    const img = await new Promise(res => {
+      const im = new Image();
+      im.onload = () => res(im);
+      im.src = dataUrl;
+    });
+
+    const w = img.naturalWidth || 1280, h = img.naturalHeight || 720;
+    const autoCfg = {
+      sceneId: base,
+      canvas: { width: w, height: h },
+      storyBasis: base,
+      sceneDurationMs: 8000,
+      elements: [
+        {
+          id: "part_1",
+          label: "1. Nửa trên",
+          sequence: 1,
+          narrativeRole: "Phần trên bức tranh",
+          subtitle: "",
+          type: "structure",
+          region: { x: 0, y: 0, width: w, height: Math.round(h * 0.52) },
+          reveal: { direction: "top_to_bottom", startMs: 300, durationMs: 3500, maskPaddingPx: 20, protectedRegions: [] },
+          handPath: { start: [Math.round(w/2), 20], end: [Math.round(w/2), Math.round(h * 0.52)], easing: "easeInOut" }
+        },
+        {
+          id: "part_2",
+          label: "2. Nửa dưới",
+          sequence: 2,
+          narrativeRole: "Phần dưới bức tranh",
+          subtitle: "",
+          type: "structure",
+          region: { x: 0, y: Math.round(h * 0.48), width: w, height: Math.round(h * 0.52) },
+          reveal: { direction: "top_to_bottom", startMs: 4000, durationMs: 3500, maskPaddingPx: 20, protectedRegions: [] },
+          handPath: { start: [Math.round(w/2), Math.round(h * 0.48)], end: [Math.round(w/2), h - 20], easing: "easeInOut" }
+        }
+      ]
+    };
+
+    newScenes.push({
+      name: base,
+      imgName: file.name,
+      cfgName: base + ".annotation.json",
+      cfg: autoCfg,
+      cfgHandle: null,
+      imgUrl: dataUrl,
+      hasConfig: true,
+      imageDataBase64: dataUrl
+    });
+  }
+
+  // Nếu đang có sẵn danh sách thì gộp thêm vào
+  const startIdx = S.scenes.length;
+  S.scenes = S.scenes.concat(newScenes);
+  
+  refreshSceneUI();
+  loadScene(startIdx);
+  toast(`Đã nạp thành công ${newScenes.length} ảnh! Tổng cộng: ${S.scenes.length} ảnh trong danh sách.`);
+}
+
+function refreshSceneUI() {
+  const sel = $('sceneSel');
+  sel.innerHTML = S.scenes.map((s, i) => `<option value="${i}">${i+1}. ${s.name}${s.hasConfig ? '' : ' (Chưa có chú thích)'}</option>`).join('');
+  sel.disabled = false;
+  $('prevBtn').disabled = $('nextBtn').disabled = S.scenes.length <= 1;
+  $('sceneCount').textContent = `Tổng ${S.scenes.length} ảnh`;
+  $('hint').hidden = true;
+  canvas.hidden = false;
+  $('side').hidden = false;
+  $('playBtn').disabled = $('timeline').disabled = false;
+  $('exportBrowserBtn').disabled = $('exportPythonBtn').disabled = false;
+  $('exportBatchBtn').disabled = S.scenes.length === 0;
+  $('sceneStrip').hidden = S.scenes.length === 0;
+  renderSceneStrip();
+}
+
+function renderSceneStrip() {
+  const strip = $('sceneStrip');
+  if (!S.scenes.length) { strip.hidden = true; return; }
+  strip.hidden = false;
+  strip.innerHTML = S.scenes.map((s, i) => `
+    <div class="scene-tab ${i === S.idx ? 'active' : ''}" data-idx="${i}">
+      <span>📸 ${i+1}. ${escapeHtml(s.name)}</span>
+      <span class="del-btn" data-del="${i}" title="Xóa ảnh này khỏi danh sách">✕</span>
+    </div>
+  `).join('') + `<button id="stripAddBtn" style="padding:4px 9px;font-size:12px;background:#312e81;border-color:#4f46e5;">＋ Thêm ảnh</button>`;
+
+  strip.querySelectorAll('.scene-tab').forEach(tab => {
+    tab.addEventListener('click', e => {
+      if (e.target.dataset.del !== undefined) {
+        e.stopPropagation();
+        removeScene(+e.target.dataset.del);
+      } else {
+        loadScene(+tab.dataset.idx);
+      }
+    });
+  });
+  
+  const addBtn = $('stripAddBtn');
+  if (addBtn) addBtn.addEventListener('click', () => $('multiImgInput').click());
+}
+
+function removeScene(idx) {
+  if (idx < 0 || idx >= S.scenes.length) return;
+  S.scenes.splice(idx, 1);
+  if (S.scenes.length === 0) {
+    S.idx = -1; S.cfg = null; S.source = null;
+    $('sceneSel').innerHTML = ''; $('sceneSel').disabled = true;
+    $('sceneStrip').hidden = true; canvas.hidden = true; $('side').hidden = true;
+    $('hint').hidden = false;
+    $('exportBrowserBtn').disabled = $('exportPythonBtn').disabled = $('exportBatchBtn').disabled = true;
+  } else {
+    const nextIdx = Math.min(S.idx >= idx ? S.idx - 1 : S.idx, S.scenes.length - 1);
+    refreshSceneUI();
+    loadScene(Math.max(0, nextIdx));
+  }
+  toast('Đã xóa ảnh khỏi danh sách');
+}
+
+// ---------- Mở thư mục ----------
 $('openBtn').addEventListener('click', openDir);
 async function openDir() {
   try {
@@ -156,7 +336,7 @@ async function openDir() {
       for await (const [name, h] of dir.entries()) if (h.kind === 'file') handles[name] = h;
       await loadPairs(Object.keys(handles), n => handles[n].getFile(), n => handles[n]);
     } else { fi.click(); }
-  } catch (e) { if (e && e.name !== 'AbortError') toast('打开失败：' + e.message, true); }
+  } catch (e) { if (e && e.name !== 'AbortError') toast('Mở thư mục thất bại: ' + e.message, true); }
 }
 const fi = document.createElement('input');
 fi.type = 'file'; fi.webkitdirectory = true; fi.multiple = true; fi.hidden = true;
@@ -177,25 +357,26 @@ async function loadPairs(names, getFile, getHandle) {
     let cfg = null, cfgHandle = null;
     if (names.includes(cfgName)) {
       try { cfg = JSON.parse(await (await getFile(cfgName)).text()); }
-      catch (e) { toast(`跳过 ${cfgName}：JSON 解析失败`, true); }
+      catch (e) { toast(`Bỏ qua ${cfgName}: Lỗi phân tích cú pháp JSON`, true); }
       cfgHandle = getHandle(cfgName);
     }
     const url = URL.createObjectURL(await getFile(inm));
     scenes.push({ name: base, imgName: inm, cfgName, cfg, cfgHandle, imgUrl: url, hasConfig: !!cfg });
   }
-  if (!scenes.length) { toast('目录里没有图片', true); return; }
+  if (!scenes.length) { toast('Thư mục không có hình ảnh nào', true); return; }
   S.scenes = scenes; S.dirty.clear();
   const sel = $('sceneSel');
-  sel.innerHTML = scenes.map((s, i) => `<option value="${i}">${i+1}. ${s.name}${s.hasConfig ? '' : '（未标注）'}</option>`).join('');
+  sel.innerHTML = scenes.map((s, i) => `<option value="${i}">${i+1}. ${s.name}${s.hasConfig ? '' : ' (Chưa có chú thích)'}</option>`).join('');
   sel.disabled = $('prevBtn').disabled = $('nextBtn').disabled = false;
-  $('sceneCount').textContent = `共 ${scenes.length} 张（${scenes.filter(s=>s.hasConfig).length} 张带标注）`;
+  $('sceneCount').textContent = `Tổng ${scenes.length} ảnh (${scenes.filter(s=>s.hasConfig).length} ảnh đã có chú thích)`;
   $('hint').hidden = true; canvas.hidden = false; $('side').hidden = false;
   $('playBtn').disabled = $('timeline').disabled = false;
-  if (!canFS) toast('当前浏览器不支持直接写回，保存将改为下载', false);
+  $('exportBrowserBtn').disabled = $('exportPythonBtn').disabled = false;
+  if (!canFS) toast('Trình duyệt hiện tại không hỗ trợ ghi đè trực tiếp, tệp sẽ được tải về khi lưu', false);
   loadScene(0);
 }
 
-// ---------- 载入单场景 ----------
+// ---------- Tải từng cảnh ----------
 $('sceneSel').addEventListener('change', e => loadScene(+e.target.value));
 $('prevBtn').addEventListener('click', () => loadScene(S.idx - 1));
 $('nextBtn').addEventListener('click', () => loadScene(S.idx + 1));
@@ -203,6 +384,11 @@ function loadScene(i) {
   if (i < 0 || i >= S.scenes.length) return;
   pause(); S.idx = i; S.sel = 0; S.time = 0;
   $('sceneSel').value = i;
+  $('exportPythonBtn').disabled = false;
+  $('exportPythonBtn').textContent = '⚡ Render cảnh này';
+  $('exportBrowserBtn').disabled = false;
+  $('exportBrowserBtn').textContent = '🎬 Xuất video Web';
+  renderSceneStrip();
   const sc = S.scenes[i];
   const img = new Image();
   img.onload = () => {
@@ -211,10 +397,11 @@ function loadScene(i) {
     if (!sc.cfg.canvas || !sc.cfg.canvas.width) sc.cfg.canvas = { width: img.naturalWidth, height: img.naturalHeight };
     if (!Array.isArray(sc.cfg.elements)) sc.cfg.elements = [];
     S.cfg = sc.cfg; S.cfgHandle = sc.cfgHandle;
+    S.sketchCanvas = null;
     samplePaper();
-    updateSaveBtns(); syncEditor(); renderList(); renderSubs(); setTime(0); // 默认停在 0（未播放）→ 显示完整图片
+    updateSaveBtns(); syncEditor(); renderList(); renderSubs(); setTime(0);
   };
-  img.onerror = () => toast('图片加载失败：' + sc.imgName, true);
+  img.onerror = () => toast('Tải ảnh thất bại: ' + sc.imgName, true);
   img.src = sc.imgUrl;
 }
 function samplePaper() {
@@ -227,7 +414,7 @@ function samplePaper() {
   } catch (e) { S.paper = '#fdf0d0'; }
 }
 
-// ---------- reveal 代理渲染 ----------
+// ---------- reveal mô phỏng ----------
 const getProgress = (t, e) => clamp((t - e.reveal.startMs) / e.reveal.durationMs, 0, 1);
 function wobble(a, s) { const env = Math.sin(a*Math.PI); return (Math.sin(a*Math.PI*2*3+s)*1.8 + Math.sin(a*Math.PI*2*7.3+s*1.7)*0.7) * env; }
 function tipPos(e, p) {
@@ -243,6 +430,61 @@ function rect(e, p) {
   if (e.reveal.direction === 'bottom_to_top') return [r.x, r.y+r.height*(1-p), r.x+r.width, r.y+r.height];
   return [r.x, r.y, r.x+r.width, r.y+r.height*p];
 }
+// ---------- Bộ lọc chuyển ảnh thật sang tranh phác thảo chì trực tiếp ----------
+function generateSketchCanvas(img) {
+  const c = document.createElement('canvas');
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  c.width = w; c.height = h;
+  const tc = c.getContext('2d');
+  tc.drawImage(img, 0, 0);
+  const imgData = tc.getImageData(0, 0, w, h);
+  const d = imgData.data;
+  
+  const gray = new Uint8Array(w * h);
+  for (let i = 0; i < d.length; i += 4) {
+    gray[i/4] = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+  }
+  
+  const edges = new Uint8Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = y * w + x;
+      const gx = -gray[idx - w - 1] - 2 * gray[idx - 1] - gray[idx + w - 1] +
+                  gray[idx - w + 1] + 2 * gray[idx + 1] + gray[idx + w + 1];
+      const gy = -gray[idx - w - 1] - 2 * gray[idx - w] - gray[idx - w + 1] +
+                  gray[idx + w - 1] + 2 * gray[idx + w] + gray[idx + w + 1];
+      const mag = Math.min(255, Math.abs(gx) + Math.abs(gy));
+      edges[idx] = mag > 35 ? Math.min(255, mag * 1.6) : 0;
+    }
+  }
+
+  for (let i = 0; i < d.length; i += 4) {
+    const idx = i / 4;
+    const g = gray[idx];
+    const e = edges[idx];
+    const ink = Math.min(255, e + (255 - g) * 0.4);
+    const inkFactor = (255 - ink) / 255;
+    
+    d[i]   = Math.round(245 * inkFactor + 30 * (1 - inkFactor));
+    d[i+1] = Math.round(235 * inkFactor + 30 * (1 - inkFactor));
+    d[i+2] = Math.round(215 * inkFactor + 30 * (1 - inkFactor));
+    d[i+3] = 255;
+  }
+  tc.putImageData(imgData, 0, 0);
+  return c;
+}
+
+function getDisplayImage() {
+  if ($('styleModeSel').value === 'sketch') {
+    if (!S.sketchCanvas && S.source) {
+      S.sketchCanvas = generateSketchCanvas(S.source);
+    }
+    return S.sketchCanvas || S.source;
+  }
+  return S.source;
+}
+$('styleModeSel').addEventListener('change', () => { S.sketchCanvas = null; render(); });
+
 function render() {
   if (!S.cfg || !S.source) return;
   const w = S.cfg.canvas.width, h = S.cfg.canvas.height;
@@ -250,10 +492,10 @@ function render() {
   ctx.fillStyle = S.paper; ctx.fillRect(0, 0, w, h);
   const arr = els();
   const done = arr.length ? Math.max(...arr.map(endMs)) : 0;
-  // 未播放且在起点（或无模块、或已全部揭示完）→ 显示完整图片
-  const showFull = !arr.length || (!S.playing && S.time <= 0) || S.time >= done + 500;
+  const showFull = !arr.length || (!S.playing && !S.isExporting && S.time <= 0) || S.time >= done + 500;
+  const dispImg = getDisplayImage();
   if (showFull) {
-    ctx.drawImage(S.source, 0, 0, w, h);
+    ctx.drawImage(dispImg, 0, 0, w, h);
   } else {
     let active = null;
     const ordered = arr.slice().sort((a, b) => a.reveal.startMs - b.reveal.startMs);
@@ -261,7 +503,7 @@ function render() {
     ordered.forEach((e, index) => {
       const p = getProgress(S.time, e); if (!p) return;
       const [x, y, x2, y2] = rect(e, p);
-      maskCtx.save(); maskCtx.beginPath(); maskCtx.rect(x, y, x2-x, y2-y); maskCtx.clip(); maskCtx.drawImage(S.source, 0, 0, w, h); maskCtx.restore();
+      maskCtx.save(); maskCtx.beginPath(); maskCtx.rect(x, y, x2-x, y2-y); maskCtx.clip(); maskCtx.drawImage(dispImg, 0, 0, w, h); maskCtx.restore();
       maskCtx.save(); maskCtx.globalCompositeOperation = 'destination-out'; maskCtx.fillStyle = '#000';
       ordered.slice(index+1).forEach(later => { const r = later.region; maskCtx.fillRect(r.x, r.y, r.width, r.height); });
       (e.reveal.protectedRegions || []).forEach(pr => maskCtx.fillRect(pr.x, pr.y, pr.width, pr.height));
@@ -274,7 +516,7 @@ function render() {
       ctx.drawImage(hand, tx - 115*s, ty - 77*s, hand.width*s, hand.height*s);
     }
   }
-  if (S.showOverlay && arr.length) drawOverlay();
+  if (S.showOverlay && !S.isExporting && arr.length) drawOverlay();
 }
 $('overlayToggle').addEventListener('change', e => { S.showOverlay = e.target.checked; render(); });
 
@@ -292,7 +534,7 @@ function drawOverlay() {
     ctx.fillRect(r.x, r.y, r.width, r.height); ctx.strokeRect(r.x, r.y, r.width, r.height); ctx.setLineDash([]);
     ctx.fillStyle = focus ? '#3b82f6' : '#e97036';
     ctx.beginPath(); ctx.arc(r.x+18, r.y+18, 15, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px "Microsoft YaHei"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 18px "Segoe UI", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(i+1, r.x+18, r.y+18);
     if (focus) {
       ctx.fillStyle = '#fff'; ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3;
@@ -302,11 +544,11 @@ function drawOverlay() {
   });
 }
 
-// ---------- 模块列表（可拖拽排序）----------
+// ---------- Danh sách vùng vẽ (Kéo thả đổi thứ tự) ----------
 function selectElem(i) { S.sel = i; syncEditor(); renderList(); renderSubs(); render(); }
 function renderList() {
   const arr = els();
-  $('elemCount').textContent = `共 ${arr.length} 个`;
+  $('elemCount').textContent = `Tổng cộng ${arr.length} vùng`;
   $('elist').innerHTML = arr.map((e, i) =>
     `<li draggable="true" data-i="${i}" class="${i===S.sel?'sel':''}"><span class="grip">⋮⋮</span><span class="o">#${i+1}</span><span class="t">${(e.reveal.startMs/1000).toFixed(1)}s</span><span class="nm">${escapeHtml(e.label || '')}</span></li>`
   ).join('');
@@ -323,21 +565,21 @@ function renderList() {
 function reorder(from, to) {
   const arr = els(); if (from < 0 || to < 0 || from === to) return;
   const [m] = arr.splice(from, 1); arr.splice(to, 0, m);
-  arr.forEach((e, i) => e.sequence = i + 1);       // 顺序即 sequence
+  arr.forEach((e, i) => e.sequence = i + 1);
   S.sel = to; markDirty(); syncEditor(); renderList(); renderSubs(); render();
 }
 
-// ---------- 字幕列表（选中模块自动高亮）----------
+// ---------- Danh sách phụ đề (chọn vùng tự động làm nổi bật) ----------
 function renderSubs() {
   const arr = els();
   $('sublist').innerHTML = arr.map((e, i) => {
     const txt = (e.subtitle || '').trim();
-    return `<li data-i="${i}" class="${i===S.sel?'sel':''} ${txt?'':'empty'}"><span class="o">#${i+1}</span><span class="s">${txt ? escapeHtml(txt) : '（无字幕）'}</span></li>`;
+    return `<li data-i="${i}" class="${i===S.sel?'sel':''} ${txt?'':'empty'}"><span class="o">#${i+1}</span><span class="s">${txt ? escapeHtml(txt) : '(Chưa có phụ đề)'}</span></li>`;
   }).join('');
   $('sublist').querySelectorAll('li').forEach(li => li.addEventListener('click', () => selectElem(+li.dataset.i)));
 }
 
-// ---------- 选中模块字段 ----------
+// ---------- Chỉnh sửa thông số vùng đang chọn ----------
 const F = ['f_label','f_x','f_y','f_w','f_h','f_dir','f_start','f_end','f_dur'];
 function syncEditor() {
   const e = els()[S.sel], on = !!e;
@@ -375,13 +617,13 @@ function applyEditor() {
 F.forEach(id => { if (id !== 'f_dur') $(id).addEventListener('input', applyEditor); });
 $('f_sub').addEventListener('input', () => { const e = els()[S.sel]; if (!e) return; e.subtitle = $('f_sub').value; markDirty(); renderSubs(); });
 
-// ---------- 增删 ----------
+// ---------- Thêm / Xóa vùng ----------
 $('addBtn').addEventListener('click', () => {
   if (!S.cfg) return;
   const arr = els(), W = S.cfg.canvas.width, H = S.cfg.canvas.height;
   const seq = arr.length + 1;
   const lastEnd = arr.length ? Math.max(...arr.map(endMs)) : 300;
-  const e = { id: `region_${seq}`, label: '新模块', sequence: seq, narrativeRole: '', type: 'object', subtitle: '',
+  const e = { id: `region_${seq}`, label: 'Vùng mới', sequence: seq, narrativeRole: '', type: 'object', subtitle: '',
     region: { x: Math.round(W*0.1), y: Math.round(H*0.1), width: Math.round(W*0.25), height: Math.round(H*0.3) },
     reveal: { direction: 'top_to_bottom', startMs: lastEnd + 200, durationMs: 2000, maskPaddingPx: 22, protectedRegions: [] },
     handPath: {} };
@@ -393,7 +635,7 @@ $('delBtn').addEventListener('click', () => {
   S.sel = Math.max(0, S.sel - 1); markDirty(); syncEditor(); renderList(); renderSubs(); render();
 });
 
-// ---------- 画布拖动 / 缩放 ----------
+// ---------- Kéo / Thay đổi kích thước trên Canvas ----------
 function canvasPoint(evt) { const b = canvas.getBoundingClientRect(); return { x: (evt.clientX-b.left) * canvas.width/b.width, y: (evt.clientY-b.top) * canvas.height/b.height }; }
 function handleAt(pt, r) { for (const [name, [x, y]] of Object.entries(handlesOf(r))) if (Math.abs(pt.x-x) <= 16 && Math.abs(pt.y-y) <= 16) return name; return null; }
 canvas.addEventListener('pointerdown', evt => {
@@ -423,7 +665,7 @@ canvas.addEventListener('pointermove', evt => {
 });
 canvas.addEventListener('pointerup', () => { S.drag = null; });
 
-// ---------- 时间轴 ----------
+// ---------- Thanh thời gian ----------
 function setTime(v) {
   const dur = totalMs();
   S.time = clamp(v, 0, dur);
@@ -437,31 +679,174 @@ function play() { if (!S.cfg) return; if (S.time >= totalMs()) S.time = 0; S.pla
 function pause() { S.playing = false; $('playBtn').textContent = '▶'; }
 function tick(ts) { if (!S.playing) return; setTime(S.time + (ts - S.last)); S.last = ts; if (S.time >= totalMs()) { pause(); return; } requestAnimationFrame(tick); }
 
-// ---------- 保存 ----------
-function markDirty() { S.dirty.add(S.idx); $('dirtyFlag').textContent = '● 未保存'; updateSaveBtns(); }
-function updateSaveBtns() { $('saveBtn').disabled = !S.dirty.has(S.idx); $('saveAllBtn').disabled = S.dirty.size === 0; }
-$('saveBtn').addEventListener('click', () => saveScene(S.idx));
-$('saveAllBtn').addEventListener('click', async () => { for (const i of [...S.dirty]) await saveScene(i); });
-async function saveScene(i) {
+// ---------- Lưu cấu hình ----------
+function markDirty() { S.dirty.add(S.idx); $('dirtyFlag').textContent = '● Chưa lưu'; updateSaveBtns(); }
+function updateSaveBtns() { $('saveBtn').disabled = !S.dirty.has(S.idx); }
+$('saveBtn').addEventListener('click', () => saveScene(S.idx, true));
+async function saveScene(i, explicitUserSave = false) {
   const sc = S.scenes[i];
-  // 保存前把总时长对齐到当前编排（最后一个区域结束 + 0.5s 凝视），供渲染器使用
+  if (!sc) return;
   if (i === S.idx && sc.cfg.elements && sc.cfg.elements.length) sc.cfg.sceneDurationMs = totalMs();
   const text = JSON.stringify(sc.cfg, null, 2);
   try {
     let handle = sc.cfgHandle;
     if (!handle && S.dirHandle && S.dirHandle.getFileHandle) handle = await S.dirHandle.getFileHandle(sc.cfgName, { create: true });
     if (handle && handle.createWritable) {
-      if (handle.requestPermission) { const perm = await handle.requestPermission({ mode: 'readwrite' }); if (perm !== 'granted') throw new Error('未授权写入'); }
+      if (handle.requestPermission) { const perm = await handle.requestPermission({ mode: 'readwrite' }); if (perm !== 'granted') throw new Error('Chưa cấp quyền ghi tệp'); }
       const w = await handle.createWritable(); await w.write(text); await w.close();
       sc.cfgHandle = handle; sc.hasConfig = true;
-    } else { downloadText(sc.cfgName, text); }
+    } else if (explicitUserSave) {
+      downloadText(sc.cfgName, text);
+    }
     S.dirty.delete(i); if (i === S.idx) $('dirtyFlag').textContent = '';
-    updateSaveBtns(); toast(`已保存：${sc.name}`);
-  } catch (e) { toast(`保存失败：${e.message}`, true); }
+    updateSaveBtns(); if (explicitUserSave) toast(`Đã lưu: ${sc.name}`);
+  } catch (e) { if (explicitUserSave) toast(`Lưu thất bại: ${e.message}`, true); }
 }
 function downloadText(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name; a.click(); URL.revokeObjectURL(a.href); }
 
-// ---------- 杂项 ----------
+// ---------- Xuất video nhanh từ trình duyệt (WebM/MP4) ----------
+$('exportBrowserBtn').addEventListener('click', exportBrowserVideo);
+async function exportBrowserVideo() {
+  if (!S.cfg || !S.source) return;
+  const dur = totalMs();
+  pause();
+  const origOverlay = S.showOverlay;
+  S.isExporting = true;
+  $('exportBrowserBtn').disabled = true;
+  $('exportBrowserBtn').textContent = '⏳ Đang quay...';
+  toast('Đang quay video từ trình duyệt...', false);
+
+  const stream = canvas.captureStream(60);
+  let mimeType = 'video/webm;codecs=vp9';
+  if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+  if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+
+  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: chunks[0]?.type || 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ext = blob.type.includes('mp4') ? '.mp4' : '.webm';
+    a.download = `${S.scenes[S.idx]?.name || 'scene'}_preview${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    S.isExporting = false;
+    S.showOverlay = origOverlay;
+    setTime(0);
+    $('exportBrowserBtn').disabled = false;
+    $('exportBrowserBtn').textContent = '🎬 Xuất video Web';
+    toast('Đã xuất video thành công!');
+  };
+
+  recorder.start();
+  const fps = 60;
+  const totalFrames = Math.ceil((dur / 1000) * fps);
+  for (let f = 0; f <= totalFrames; f++) {
+    const curMs = (f / fps) * 1000;
+    setTime(curMs);
+    await new Promise(r => setTimeout(r, 1000 / fps));
+  }
+  recorder.stop();
+}
+
+// ---------- Render MP4 nét cao (Python Engine) ----------
+$('exportPythonBtn').addEventListener('click', exportPythonVideo);
+async function exportPythonVideo() {
+  if (!S.cfg) return;
+  const sc = S.scenes[S.idx];
+  await saveScene(S.idx);
+
+  if (window.location.protocol.startsWith('http')) {
+    $('exportPythonBtn').disabled = true;
+    $('exportPythonBtn').textContent = '⚡ Đang render...';
+    toast('Đang chạy Python Engine để xuất video H.264...', false);
+    try {
+      const resp = await fetch('/api/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: sc.imgName,
+          annotation: sc.cfgName,
+          output: `${sc.name}_whiteboard.mp4`,
+          annotationData: sc.cfg,
+          imageDataBase64: sc.imageDataBase64 || null,
+          sceneName: sc.name,
+          style_mode: $('styleModeSel').value
+        })
+      });
+      const res = await resp.json();
+      if (res.status === 'ok') {
+        toast('Render hoàn tất! Đang tải video về...', false);
+        const a = document.createElement('a');
+        a.href = res.downloadUrl;
+        a.download = `${sc.name}_whiteboard.mp4`;
+        a.click();
+      } else {
+        toast(res.message || 'Lỗi render', true);
+      }
+    } catch (err) {
+      toast('Lỗi kết nối server: ' + err.message, true);
+    } finally {
+      $('exportPythonBtn').disabled = false;
+      $('exportPythonBtn').textContent = '⚡ Render MP4 nét cao';
+    }
+  } else {
+    alert(`💡 ĐỂ RENDER MP4 BẰNG 1 CÚ CLICK TRÊN WEB:\n\n1. Mở CMD gõ lệnh:\n   run_pipeline.bat web\n\n2. Trang web sẽ tự động mở ra. Bạn chỉ cần nhấn nút "Render MP4 nét cao" này là video tự động được tạo và tải về máy!\n\nHoặc chạy dòng lệnh CMD thủ công:\n   run_pipeline.bat render "${sc.imgName}" "${sc.cfgName}" "${sc.name}_whiteboard.mp4"`);
+  }
+}
+
+// ---------- Render TẤT CẢ các ảnh (Ghép thành 1 video) ----------
+$('exportBatchBtn').addEventListener('click', exportBatchVideo);
+async function exportBatchVideo() {
+  if (!S.scenes.length) return;
+  if (S.idx >= 0) await saveScene(S.idx);
+
+  if (window.location.protocol.startsWith('http')) {
+    $('exportBatchBtn').disabled = true;
+    $('exportBatchBtn').textContent = `⏳ Đang render ${S.scenes.length} ảnh...`;
+    toast(`Đang chạy render hàng loạt ${S.scenes.length} ảnh & tự động ghép nối...`, false);
+    try {
+      const resp = await fetch('/api/render_batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenes: S.scenes.map(sc => ({
+            name: sc.name,
+            image: sc.imgName,
+            annotation: sc.cfgName,
+            annotationData: sc.cfg,
+            imageDataBase64: sc.imageDataBase64 || null
+          })),
+          style_mode: $('styleModeSel').value,
+          merge: true
+        })
+      });
+      const res = await resp.json();
+      if (res.status === 'ok') {
+        toast(`Đã render và ghép nối xong ${S.scenes.length} ảnh! Đang tải video...`, false);
+        const a = document.createElement('a');
+        a.href = res.downloadUrl;
+        a.download = res.merged ? 'merged_story_whiteboard.mp4' : `${S.scenes[0].name}_whiteboard.mp4`;
+        a.click();
+      } else {
+        toast(res.message || 'Lỗi render hàng loạt', true);
+      }
+    } catch (err) {
+      toast('Lỗi kết nối server: ' + err.message, true);
+    } finally {
+      $('exportBatchBtn').disabled = false;
+      $('exportBatchBtn').textContent = '⚡ Render TẤT CẢ ảnh (Ghép video)';
+    }
+  } else {
+    alert(`💡 ĐỂ RENDER TẤT CẢ ẢNH BẰNG 1 CÚ CLICK TRÊN WEB:\n\n1. Mở CMD gõ lệnh:\n   run_pipeline.bat web\n\n2. Sau đó bấm nút "Render TẤT CẢ ảnh" này, hệ thống sẽ tự render từng ảnh và ghép nối thành 1 video duy nhất hoàn chỉnh!`);
+  }
+}
+
+// ---------- Phím tắt ----------
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
   if (e.code === 'Space') { e.preventDefault(); S.playing ? pause() : play(); }

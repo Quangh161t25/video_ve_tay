@@ -1,0 +1,75 @@
+{
+  "sceneId": "Scene_2_Phần_2__Đột_phá_không_gian (1)",
+  "canvas": {
+    "width": 768,
+    "height": 1376
+  },
+  "storyBasis": "Scene_2_Phần_2__Đột_phá_không_gian (1)",
+  "sceneDurationMs": 8000,
+  "elements": [
+    {
+      "id": "part_1",
+      "label": "1. Nửa trên",
+      "sequence": 1,
+      "narrativeRole": "Phần trên bức tranh",
+      "subtitle": "",
+      "type": "structure",
+      "region": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 716
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 300,
+        "durationMs": 3500,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          384,
+          20
+        ],
+        "end": [
+          384,
+          716
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "part_2",
+      "label": "2. Nửa dưới",
+      "sequence": 2,
+      "narrativeRole": "Phần dưới bức tranh",
+      "subtitle": "",
+      "type": "structure",
+      "region": {
+        "x": 0,
+        "y": 660,
+        "width": 768,
+        "height": 716
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 4000,
+        "durationMs": 3500,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          384,
+          660
+        ],
+        "end": [
+          384,
+          1356
+        ],
+        "easing": "easeInOut"
+      }
+    }
+  ]
+}

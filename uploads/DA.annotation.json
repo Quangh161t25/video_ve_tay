@@ -1,0 +1,75 @@
+{
+  "sceneId": "DA",
+  "canvas": {
+    "width": 1440,
+    "height": 1440
+  },
+  "storyBasis": "DA",
+  "sceneDurationMs": 8000,
+  "elements": [
+    {
+      "id": "part_1",
+      "label": "1. Nửa trên",
+      "sequence": 1,
+      "narrativeRole": "Phần trên bức tranh",
+      "subtitle": "",
+      "type": "structure",
+      "region": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 749
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 300,
+        "durationMs": 3500,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          720,
+          20
+        ],
+        "end": [
+          720,
+          749
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "part_2",
+      "label": "2. Nửa dưới",
+      "sequence": 2,
+      "narrativeRole": "Phần dưới bức tranh",
+      "subtitle": "",
+      "type": "structure",
+      "region": {
+        "x": 0,
+        "y": 691,
+        "width": 1440,
+        "height": 749
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 4000,
+        "durationMs": 3500,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          720,
+          691
+        ],
+        "end": [
+          720,
+          1420
+        ],
+        "easing": "easeInOut"
+      }
+    }
+  ]
+}

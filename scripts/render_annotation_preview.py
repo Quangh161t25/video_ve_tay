@@ -14,7 +14,7 @@ def main(image_path: str, annotation_path: str, output_path: str) -> None:
     small_font = ImageFont.truetype(font_file, 18)
     colors = [(38, 103, 255, 225), (255, 105, 92, 225), (41, 167, 102, 225), (181, 100, 255, 225)]
 
-    data = json.loads(Path(annotation_path).read_text(encoding="utf-8"))
+    data = json.loads(Path(annotation_path).read_text(encoding="utf-8-sig"))
     for index, element in enumerate(data["elements"], start=1):
         region = element["region"]
         x, y = region["x"], region["y"]

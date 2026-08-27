@@ -1,0 +1,139 @@
+{
+  "sceneId": "scene-room",
+  "canvas": {
+    "width": 1920,
+    "height": 1080
+  },
+  "storyBasis": "Không gian căn phòng ngủ đơn sơ với chiếc giường gỗ, cửa sổ, điều hòa và cánh cửa kim loại.",
+  "sceneDurationMs": 9700,
+  "elements": [
+    {
+      "id": "bed",
+      "label": "1. Giường ngủ & Dép",
+      "sequence": 1,
+      "narrativeRole": "Chủ thể chính căn phòng",
+      "subtitle": "vẽ của sổ",
+      "type": "structure",
+      "region": {
+        "x": 819.8215579286078,
+        "y": 342.60574774786517,
+        "width": 175,
+        "height": 252
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 300,
+        "durationMs": 2400,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          907.3215579286078,
+          468.60574774786517
+        ],
+        "end": [
+          907.3215579286078,
+          594.6057477478652
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "window_ac",
+      "label": "2. Cửa sổ & Điều hòa",
+      "sequence": 2,
+      "narrativeRole": "Chi tiết tường trên",
+      "subtitle": "vẽ giường",
+      "type": "structure",
+      "region": {
+        "x": 530.1541306566539,
+        "y": 439.2689143504798,
+        "width": 599,
+        "height": 493
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 2800,
+        "durationMs": 2200,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          829.6541306566539,
+          685.7689143504798
+        ],
+        "end": [
+          829.6541306566539,
+          932.2689143504798
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "door_bag",
+      "label": "3. Cánh cửa & Túi xách",
+      "sequence": 3,
+      "narrativeRole": "Góc phòng và đồ đạc",
+      "subtitle": "vẽ tủ",
+      "type": "object",
+      "region": {
+        "x": 1131,
+        "y": 280,
+        "width": 281,
+        "height": 641
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 5100,
+        "durationMs": 1900,
+        "maskPaddingPx": 20,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          1271.5,
+          600.5
+        ],
+        "end": [
+          1271.5,
+          921
+        ],
+        "easing": "easeInOut"
+      }
+    },
+    {
+      "id": "region_4",
+      "label": "Vùng mới",
+      "sequence": 4,
+      "narrativeRole": "",
+      "type": "object",
+      "subtitle": "vẽ nốt",
+      "region": {
+        "x": 533.8458693433458,
+        "y": 28.34749643371265,
+        "width": 758,
+        "height": 274
+      },
+      "reveal": {
+        "direction": "top_to_bottom",
+        "startMs": 7200,
+        "durationMs": 2000,
+        "maskPaddingPx": 22,
+        "protectedRegions": []
+      },
+      "handPath": {
+        "start": [
+          912.8458693433458,
+          165.34749643371265
+        ],
+        "end": [
+          912.8458693433458,
+          302.34749643371265
+        ],
+        "easing": "easeInOut"
+      }
+    }
+  ]
+}

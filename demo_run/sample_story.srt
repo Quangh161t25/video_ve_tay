@@ -1,0 +1,11 @@
+﻿1
+00:00:00,300 --> 00:00:02,900
+Trên đỉnh núi đá, một chú khỉ con đang ngồi ăn chuối một cách vui vẻ.
+
+2
+00:00:03,100 --> 00:00:05,800
+Bất ngờ, một chú khỉ lớn xuất hiện và giật lấy quả chuối.
+
+3
+00:00:06,000 --> 00:00:08,600
+Xung quanh, các em nhỏ đứng xem và reo hò thích thú.

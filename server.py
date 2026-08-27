@@ -9,6 +9,8 @@ import subprocess
 import sys
 import urllib.parse
 import webbrowser
+import cv2
+import numpy as np
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -194,6 +196,47 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         "outputs": rel_outputs,
                         "merged": merged_rel,
                         "downloadUrl": final_dl
+                    }
+            except Exception as e:
+                resp = {"status": "error", "message": str(e)}
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(resp, ensure_ascii=False).encode("utf-8"))
+        elif self.path == "/api/ai_segment":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            try:
+                data = json.loads(body)
+                api_key = data.get("apiKey") or None
+                total_ms = int(data.get("totalMs", 8000))
+                
+                img_bgr = None
+                if "imageDataBase64" in data and data["imageDataBase64"]:
+                    import base64
+                    b64 = data["imageDataBase64"]
+                    if "," in b64:
+                        b64 = b64.split(",", 1)[1]
+                    img_bytes = base64.b64decode(b64)
+                    nparr = np.frombuffer(img_bytes, np.uint8)
+                    img_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                elif "image" in data and data["image"]:
+                    img_path = ROOT_DIR / data["image"]
+                    if not img_path.exists():
+                        img_path = ROOT_DIR / "uploads" / data["image"]
+                    if img_path.exists():
+                        img_bgr = cv2.imdecode(np.fromfile(str(img_path), dtype=np.uint8), cv2.IMREAD_COLOR)
+                
+                if img_bgr is None:
+                    resp = {"status": "error", "message": "Không tìm thấy dữ liệu hình ảnh"}
+                else:
+                    from scripts.ai_segmenter import segment_with_gemini
+                    ann_data = segment_with_gemini(img_bgr, api_key=api_key, total_duration_ms=total_ms)
+                    resp = {
+                        "status": "ok",
+                        "message": "AI phân vùng thành công",
+                        "annotation": ann_data
                     }
             except Exception as e:
                 resp = {"status": "error", "message": str(e)}

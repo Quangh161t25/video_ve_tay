@@ -96,6 +96,7 @@
     <option value="1:1">⬛ 1:1 (Vuông Feed)</option>
     <option value="4:5">📱 4:5 (Dọc Insta)</option>
   </select>
+  <button id="aiSegmentBtn" class="primary" style="background:#059669;border-color:#059669;font-weight:700;" title="Google Gemini AI tự động nhận diện đối tượng & sắp xếp thứ tự vẽ (Nhân vật -> Đồ vật -> Hậu cảnh)">🤖 AI Phân vùng</button>
   <button id="saveBtn" class="save" disabled>💾 Lưu</button>
   <button id="exportBrowserBtn" class="success" disabled title="Tải video mô phỏng của cảnh này">🎬 Xuất video Web</button>
   <button id="exportPythonBtn" class="primary" disabled title="Render MP4 cảnh này bằng Python">⚡ Render cảnh này</button>
@@ -271,7 +272,10 @@ async function loadMultipleFiles(fileList) {
   
   refreshSceneUI();
   loadScene(startIdx);
-  toast(`Đã nạp thành công ${newScenes.length} ảnh! Tổng cộng: ${S.scenes.length} ảnh trong danh sách.`);
+  toast(`Đã nạp thành công ${newScenes.length} ảnh! Đang chạy Google AI phân vùng đối tượng...`);
+  if (window.location.protocol.startsWith('http')) {
+    aiSegmentCurrentScene(false);
+  }
 }
 
 function refreshSceneUI() {
@@ -898,6 +902,50 @@ async function exportBatchVideo() {
     }
   } else {
     alert(`💡 ĐỂ RENDER TẤT CẢ ẢNH BẰNG 1 CÚ CLICK TRÊN WEB:\n\n1. Mở CMD gõ lệnh:\n   run_pipeline.bat web\n\n2. Sau đó bấm nút "Render TẤT CẢ ảnh" này, hệ thống sẽ tự render từng ảnh và ghép nối thành 1 video duy nhất hoàn chỉnh!`);
+  }
+}
+
+// ---------- Google Gemini AI Phân vùng ảnh tự động ----------
+$('aiSegmentBtn').addEventListener('click', () => aiSegmentCurrentScene(true));
+
+async function aiSegmentCurrentScene(explicit = true) {
+  if (S.idx < 0 || !S.scenes[S.idx]) return;
+  const sc = S.scenes[S.idx];
+  const btn = $('aiSegmentBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang phân tích AI...';
+  if (explicit) toast('Đang dùng Google Gemini Vision AI nhận diện đối tượng & thứ tự vẽ...', false);
+
+  try {
+    const resp = await fetch('/api/ai_segment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: sc.imgName,
+        imageDataBase64: sc.imageDataBase64 || null,
+        totalMs: totalMs()
+      })
+    });
+    const res = await resp.json();
+    if (res.status === 'ok' && res.annotation && Array.isArray(res.annotation.elements) && res.annotation.elements.length > 0) {
+      sc.cfg.elements = res.annotation.elements;
+      if (res.annotation.sceneDurationMs) sc.cfg.sceneDurationMs = res.annotation.sceneDurationMs;
+      S.cfg = sc.cfg;
+      S.sel = 0;
+      markDirty();
+      syncEditor();
+      renderList();
+      renderSubs();
+      setTime(0);
+      toast(`✨ Google AI đã phân vùng thành công (${res.annotation.elements.length} đối tượng: Nhân vật ➔ Đồ vật ➔ Hậu cảnh)!`, false);
+    } else {
+      if (explicit) toast(res.message || 'AI phân vùng không thành công', true);
+    }
+  } catch (e) {
+    if (explicit) toast('Lỗi AI phân vùng: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🤖 AI Phân vùng';
   }
 }
 

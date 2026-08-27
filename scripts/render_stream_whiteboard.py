@@ -82,6 +82,9 @@ class RegionStreamRenderer:
 
         h0, w0 = image_bgr.shape[:2]
         ar_mode = getattr(cfg, "aspect_ratio", "auto")
+        edge = getattr(cfg, "grid_edge", 10)
+        align = edge if edge % 2 == 0 else edge * 2
+
         target_w, target_h = None, None
         if ar_mode == "9:16":
             target_h = cfg.cap_long_edge
@@ -97,8 +100,8 @@ class RegionStreamRenderer:
             target_w = int(round(target_h * 4 / 5))
 
         if target_w and target_h:
-            target_w = max(2, (target_w // 2) * 2)
-            target_h = max(2, (target_h // 2) * 2)
+            target_w = max(align, int(round(target_w / align)) * align)
+            target_h = max(align, int(round(target_h / align)) * align)
             self.out_w, self.out_h = target_w, target_h
             scale = min(target_w / w0, target_h / h0)
             nw = max(2, int(round(w0 * scale)))
@@ -110,10 +113,10 @@ class RegionStreamRenderer:
             canvas_img[oy:oy+nh, ox:ox+nw] = resized
             image_bgr = canvas_img
         else:
-            # Tự động chuẩn theo tỉ lệ gốc của ảnh (Original aspect ratio)
+            # Tự động chuẩn theo tỉ lệ gốc của ảnh (Original aspect ratio) và chia hết cho grid_edge
             scale = cfg.cap_long_edge / max(h0, w0)
-            w = max(2, int(round(w0 * scale)) // 2 * 2)
-            h = max(2, int(round(h0 * scale)) // 2 * 2)
+            w = max(align, int(round(w0 * scale / align)) * align)
+            h = max(align, int(round(h0 * scale / align)) * align)
             self.out_w, self.out_h = w, h
 
         # 标注画布坐标 → 输出坐标的缩放比
@@ -232,13 +235,25 @@ class RegionStreamRenderer:
                 out.append([(int(round(x)), int(round(y))) for x, y in pts])
         return sr._order_skeleton_strokes(out)
 
-    # ── 落墨（限制在 allowed 内）──
+    # ── 落墨（限制在 allowed 内，局部裁剪加速 100x）──
     def _reveal_ink_segment(self, a: tuple[int, int], b: tuple[int, int], allowed: np.ndarray) -> None:
-        seg = np.zeros((self.out_h, self.out_w), dtype=np.uint8)
         thick = max(1, self.cfg.ink_reveal_radius * 2 + 1)
-        cv2.line(seg, a, b, 255, thickness=thick, lineType=cv2.LINE_AA)
-        revealed = (seg > 0) & self.ink_pixels & allowed
-        self.drawn[revealed] = self.ink_paint[revealed]
+        r = thick + 2
+        min_x = max(0, min(a[0], b[0]) - r)
+        max_x = min(self.out_w, max(a[0], b[0]) + r + 1)
+        min_y = max(0, min(a[1], b[1]) - r)
+        max_y = min(self.out_h, max(a[1], b[1]) + r + 1)
+        if max_x <= min_x or max_y <= min_y:
+            return
+        
+        seg = np.zeros((max_y - min_y, max_x - min_x), dtype=np.uint8)
+        cv2.line(seg, (a[0] - min_x, a[1] - min_y), (b[0] - min_x, b[1] - min_y), 255, thickness=thick, lineType=cv2.LINE_AA)
+        sub_ink = self.ink_pixels[min_y:max_y, min_x:max_x]
+        sub_allow = allowed[min_y:max_y, min_x:max_x]
+        revealed = (seg > 0) & sub_ink & sub_allow
+        sub_drawn = self.drawn[min_y:max_y, min_x:max_x]
+        sub_paint = self.ink_paint[min_y:max_y, min_x:max_x]
+        sub_drawn[revealed] = sub_paint[revealed]
 
     def _ink_stamp_cell(self, cell: tuple[int, int], allowed: np.ndarray) -> None:
         r, c = cell
@@ -568,7 +583,7 @@ def _parse_args(argv=None):
                    help="输出比例: auto(原图比例) | 9:16 | 16:9 | 1:1 | 4:5")
     p.add_argument("--pause", default="heavy", choices=["heavy", "auto", "light", "off"],
                    help="起笔段停顿节奏（预留，逐区域画法下影响较弱）")
-    p.add_argument("--fps", type=int, default=None)
+    p.add_argument("--fps", type=int, default=30)
     p.add_argument("--grid-edge", type=int, default=None)
     p.add_argument("--brush-radius", type=int, default=None)
     p.add_argument("--cap-long-edge", type=int, default=None,

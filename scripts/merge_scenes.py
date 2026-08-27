@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import cv2
+import numpy as np
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):

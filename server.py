@@ -7,6 +7,10 @@ import json
 import os
 import subprocess
 import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import urllib.parse
 import webbrowser
 import cv2
@@ -26,9 +30,23 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
             body = self.rfile.read(content_length).decode("utf-8")
             try:
                 data = json.loads(body)
+                upload_dir = ROOT_DIR / "uploads"
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                
+                raw_name = data.get("sceneName", "") or Path(data.get("image", "scene")).stem
+                safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in raw_name) or "scene"
+
                 img_path = ROOT_DIR / data.get("image", "")
+                if not img_path.exists() and (upload_dir / data.get("image", "")).exists():
+                    img_path = upload_dir / data.get("image", "")
+
                 ann_path = ROOT_DIR / data.get("annotation", "")
-                out_path = ROOT_DIR / data.get("output", "output.mp4")
+                if not ann_path.exists() and (upload_dir / data.get("annotation", "")).exists():
+                    ann_path = upload_dir / data.get("annotation", "")
+                if not ann_path.exists():
+                    ann_path = upload_dir / f"{safe_name}.annotation.json"
+
+                out_path = upload_dir / f"{safe_name}_whiteboard.mp4"
                 hand_path = ROOT_DIR / "assets" / "drawing-hand.png"
                 
                 # Hỗ trợ tải ảnh trực tiếp dạng base64 từ trình duyệt
@@ -38,17 +56,12 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     if "," in img_b64:
                         img_b64 = img_b64.split(",", 1)[1]
                     img_bytes = base64.b64decode(img_b64)
-                    upload_dir = ROOT_DIR / "uploads"
-                    upload_dir.mkdir(parents=True, exist_ok=True)
-                    scene_name = data.get("sceneName", "scene_upload")
-                    img_path = upload_dir / f"{scene_name}.png"
-                    ann_path = upload_dir / f"{scene_name}.annotation.json"
-                    out_path = upload_dir / f"{scene_name}_whiteboard.mp4"
+                    img_path = upload_dir / f"{safe_name}.png"
                     img_path.write_bytes(img_bytes)
 
                 # Nếu client gửi kèm cấu hình json mới thì lưu lại trước khi render
-                if "annotationData" in data and ann_path:
-                    ann_path.parent.mkdir(parents=True, exist_ok=True)
+                if "annotationData" in data and data["annotationData"]:
+                    ann_path = upload_dir / f"{safe_name}.annotation.json"
                     ann_path.write_text(json.dumps(data["annotationData"], ensure_ascii=False, indent=2), encoding="utf-8")
 
                 venv_py = ROOT_DIR / ".venv" / "Scripts" / "python.exe"
@@ -85,6 +98,7 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     "--color-fill", data.get("color_fill", "contour-wipe"),
                     "--color-timing", color_timing,
                     "--aspect-ratio", aspect_ratio,
+                    "--fps", "30",
                     "--cap-long-edge", "960"
                 ]
                 
@@ -132,7 +146,15 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         safe_name = f"scene_{i+1}"
                     
                     img_path = ROOT_DIR / sc.get("image", "")
+                    if not img_path.exists() and (upload_dir / sc.get("image", "")).exists():
+                        img_path = upload_dir / sc.get("image", "")
+
                     ann_path = ROOT_DIR / sc.get("annotation", "")
+                    if not ann_path.exists() and (upload_dir / sc.get("annotation", "")).exists():
+                        ann_path = upload_dir / sc.get("annotation", "")
+                    if not ann_path.exists():
+                        ann_path = upload_dir / f"{safe_name}.annotation.json"
+
                     out_path = upload_dir / f"{safe_name}_whiteboard.mp4"
                     
                     if "imageDataBase64" in sc and sc["imageDataBase64"]:
@@ -169,6 +191,7 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         "--color-fill", "contour-wipe",
                         "--color-timing", color_timing,
                         "--aspect-ratio", aspect_ratio,
+                        "--fps", "30",
                         "--cap-long-edge", "960"
                     ]
                     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)

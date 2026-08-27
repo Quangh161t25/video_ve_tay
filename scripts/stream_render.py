@@ -677,18 +677,19 @@ class TipOverlay:
         tip_anchor_x: float = 0.0,
         tip_anchor_y: float = 0.0,
     ) -> None:
-        self.hand = hand
-        self.mask = mask
+        self.hand = hand.astype(np.float32)
         self.h, self.w = hand.shape[:2]
-        self.mask_inv = 1.0 - mask
+        if mask.ndim == 2:
+            self.mask = mask[:, :, None].astype(np.float32)
+        else:
+            self.mask = mask.astype(np.float32)
+        self.mask_inv = 1.0 - self.mask
         # 笔尖在素材中的像素坐标（落墨点要与之对齐）
-        # Map normalized anchors exactly onto the source image's pixel range.
         self.tip_px = int(round((self.w - 1) * np.clip(tip_anchor_x, 0.0, 1.0)))
         self.tip_py = int(round((self.h - 1) * np.clip(tip_anchor_y, 0.0, 1.0)))
 
     def stamp(self, canvas: np.ndarray, x: int, y: int) -> np.ndarray:
         """让素材的笔尖锚点对齐到画布坐标 (x, y)（即落墨点）。"""
-        # 素材左上角 = 落墨点 - 笔尖偏移
         anchor_x = x - self.tip_px
         anchor_y = y - self.tip_py
         h_canvas, w_canvas = canvas.shape[:2]
@@ -706,15 +707,12 @@ class TipOverlay:
         sy1 = sy0 + (y1 - y0)
 
         region = canvas[y0:y1, x0:x1]
-        hand_region = self.hand[sy0:sy1, sx0:sx1]
-        mask_region = self.mask[sy0:sy1, sx0:sx1]
-        inv_region = self.mask_inv[sy0:sy1, sx0:sx1]
+        hand_sub = self.hand[sy0:sy1, sx0:sx1]
+        mask_sub = self.mask[sy0:sy1, sx0:sx1]
+        inv_sub = self.mask_inv[sy0:sy1, sx0:sx1]
 
-        for c in range(3):
-            region[:, :, c] = (
-                region[:, :, c] * inv_region + hand_region[:, :, c] * mask_region
-            )
-        canvas[y0:y1, x0:x1] = region
+        blended = (region.astype(np.float32) * inv_sub + hand_sub * mask_sub).astype(np.uint8)
+        canvas[y0:y1, x0:x1] = blended
         return canvas
 
 

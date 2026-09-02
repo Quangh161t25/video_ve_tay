@@ -83,11 +83,19 @@
   <span id="sceneCount" class="muted"></span>
   <label class="muted" style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="overlayToggle" checked> Khung phân vùng</label>
   <span class="spacer"></span>
-  <span id="dirtyFlag" class="dirty"></span>
+  <select id="penTypeSel" style="background:#1e293b;border-color:#10b981;color:#6ee7b7;font-weight:600;padding:5px 8px;" title="Chọn loại bút / cọ vẽ">
+    <option value="pencil" selected>✏️ Bút chì Faber-Castell</option>
+    <option value="brush">🖌️ Cọ vẽ màu nước Da Vinci</option>
+    <option value="marker">🖊️ Bút dạ bảng Marker</option>
+    <option value="classic">🖍️ Bút vẽ hoạt hình sạch</option>
+    <option value="none">🚫 Không hiện tay (Vẽ tự do)</option>
+  </select>
   <select id="styleModeSel" style="background:#1e293b;border-color:#3b82f6;color:#93c5fd;font-weight:600;padding:5px 8px;" title="Chọn chế độ xử lý ảnh">
-    <option value="sketch">✏️ Kiểu 1: Phác thảo nét vẽ (Sketch chì đen trắng)</option>
-    <option value="photo_sync" selected>📸 Kiểu 2A: Vẽ ảnh thật - Vẽ tới đâu tô màu tới đó (Từng vùng)</option>
-    <option value="photo_after_all">🎨 Kiểu 2B: Vẽ ảnh thật - Vẽ xong hết nét chì mới tô màu (Toàn tranh)</option>
+    <option value="color_direct" selected>🎨 Kiểu 1: Vẽ tranh màu trực tiếp (Cọ/Bút vẽ màu sống động - Tốt nhất cho ảnh màu!)</option>
+    <option value="color_ink_sync">🌈 Kiểu 2: Phác thảo nét màu ➔ Tô màu (Nét vẽ mang màu ảnh)</option>
+    <option value="photo_sync">✏️ Kiểu 3: Phác thảo chì đen ➔ Vẽ tới đâu tô màu tới đó</option>
+    <option value="photo_after_all">🖼️ Kiểu 4: Phác thảo chì toàn tranh ➔ Tô màu sau cùng</option>
+    <option value="sketch">📝 Kiểu 5: Tranh phác thảo nét chì nghệ thuật (Không màu)</option>
   </select>
   <select id="aspectRatioSel" style="background:#1e293b;border-color:#3b82f6;color:#93c5fd;font-weight:600;padding:5px 8px;" title="Tỉ lệ khung hình video">
     <option value="auto" selected>📐 Tỉ lệ: Theo ảnh gốc</option>
@@ -165,7 +173,29 @@ const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 
 const canvas = $('canvas'), ctx = canvas.getContext('2d');
 const mask = document.createElement('canvas'), maskCtx = mask.getContext('2d');
-const hand = new Image(); hand.src = './drawing-hand.png';
+const penMap = {
+  pencil: './hand_pencil.png',
+  brush: './hand_brush.png',
+  marker: './hand_marker.png',
+  classic: './hand_marker_clean.png',
+  none: ''
+};
+const hand = new Image();
+function updateHandPen() {
+  const p = $('penTypeSel') ? $('penTypeSel').value : 'pencil';
+  if (p === 'none') {
+    hand.src = '';
+  } else {
+    hand.src = penMap[p] || './hand_pencil.png';
+  }
+}
+updateHandPen();
+if ($('penTypeSel')) {
+  $('penTypeSel').addEventListener('change', () => {
+    updateHandPen();
+    render();
+  });
+}
 
 const S = { scenes: [], idx: -1, cfg: null, cfgHandle: null, dirHandle: null,
             source: null, paper: '#fdf0d0', time: 0, sel: 0, playing: false, last: 0,
@@ -568,9 +598,12 @@ function render() {
       if (p > 0 && p < 1) active = [e, p];
     });
     ctx.drawImage(mask, 0, 0);
-    if (active && hand.complete && hand.naturalWidth) {
+    if (active && $('penTypeSel').value !== 'none' && hand.src && hand.complete && hand.naturalWidth) {
       const [e, p] = active, [tx, ty] = tipPos(e, p), s = w / 1672 * 0.42;
-      ctx.drawImage(hand, tx - 115*s, ty - 77*s, hand.width*s, hand.height*s);
+      const pen = $('penTypeSel').value;
+      const ox = (pen === 'classic') ? 115 * s : 0;
+      const oy = (pen === 'classic') ? 77 * s : 0;
+      ctx.drawImage(hand, tx - ox, ty - oy, hand.width * s, hand.height * s);
     }
   }
   if (S.showOverlay && !S.isExporting && arr.length) drawOverlay();
@@ -832,6 +865,7 @@ async function exportPythonVideo() {
           annotationData: sc.cfg,
           imageDataBase64: sc.imageDataBase64 || null,
           sceneName: sc.name,
+          pen_type: $('penTypeSel').value,
           style_mode: $('styleModeSel').value,
           aspect_ratio: $('aspectRatioSel').value
         })
@@ -879,6 +913,7 @@ async function exportBatchVideo() {
             annotationData: sc.cfg,
             imageDataBase64: sc.imageDataBase64 || null
           })),
+          pen_type: $('penTypeSel').value,
           style_mode: $('styleModeSel').value,
           aspect_ratio: $('aspectRatioSel').value,
           merge: true

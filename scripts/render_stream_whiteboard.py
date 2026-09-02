@@ -41,7 +41,13 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 import stream_render as sr  # noqa: E402
 
-DEFAULT_HAND = _SCRIPT_DIR.parent / "assets" / "drawing-hand.png"
+DEFAULT_HAND = _SCRIPT_DIR.parent / "assets" / "hand_pencil.png"
+PEN_MAP = {
+    "pencil": _SCRIPT_DIR.parent / "assets" / "hand_pencil.png",
+    "brush": _SCRIPT_DIR.parent / "assets" / "hand_brush.png",
+    "marker": _SCRIPT_DIR.parent / "assets" / "hand_marker.png",
+    "classic": _SCRIPT_DIR.parent / "assets" / "hand_marker_clean.png",
+}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -131,17 +137,32 @@ class RegionStreamRenderer:
         # Tự động nhận diện ảnh chụp thật hoặc kích hoạt chế độ ảnh thật
         hsv = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2HSV)
         is_photo = getattr(cfg, "photo_mode", False) or np.mean(hsv[:, :, 1]) > 20 or np.std(self.color_img) > 40
+        ink_color_mode = getattr(cfg, "ink_color_mode", "color")
         
         if is_photo:
-            smooth = cv2.bilateralFilter(self.color_img, 7, 50, 50)
+            smooth = cv2.bilateralFilter(self.color_img, 9, 65, 65)
             p_gray = cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY)
-            edges = cv2.Canny(p_gray, 35, 110)
-            self.ink_pixels = edges > 0
-            self.thresh_map = np.where(edges > 0, 0, 255).astype(np.uint8)
+            edges = cv2.Canny(p_gray, 40, 110)
+            # Lọc bỏ nhiễu hạt nhỏ (<10px) để nét vẽ tinh gọn, đúng nét đối tượng chính
+            num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(edges, connectivity=8)
+            clean_edges = np.zeros_like(edges)
+            for i in range(1, num_labels):
+                if stats[i, cv2.CC_STAT_AREA] >= 10:
+                    clean_edges[labels == i] = 255
+            self.ink_pixels = clean_edges > 0
+            self.thresh_map = np.where(clean_edges > 0, 0, 255).astype(np.uint8)
             self.grid_blocks = sr._to_grid_blocks(self.thresh_map, cfg.grid_edge)
             self.active_all = sr._active_mask(self.thresh_map, cfg.grid_edge, 128)
-            # Nét chì màu xám đen mượt mà (không tạo đốm trắng)
-            self.ink_paint = np.full_like(self.color_img, 35, dtype=np.float32)
+            
+            if ink_color_mode == "color":
+                # Nét vẽ lấy chính màu của đối tượng nhưng đậm hơn 40% để tạo độ tương phản như mực màu
+                hsv_c = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2HSV).astype(np.float32)
+                hsv_c[:, :, 1] = np.clip(hsv_c[:, :, 1] * 1.3, 0, 255)
+                hsv_c[:, :, 2] = np.clip(hsv_c[:, :, 2] * 0.55, 0, 255)
+                self.ink_paint = cv2.cvtColor(hsv_c.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+            else:
+                # Nét chì màu xám đen mượt mà
+                self.ink_paint = np.full_like(self.color_img, 35, dtype=np.float32)
         else:
             self.thresh_map = cv2.adaptiveThreshold(
                 gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 10
@@ -149,7 +170,13 @@ class RegionStreamRenderer:
             self.grid_blocks = sr._to_grid_blocks(self.thresh_map, cfg.grid_edge)
             self.active_all = sr._active_mask(self.thresh_map, cfg.grid_edge, cfg.ink_threshold)
             self.ink_pixels = self.thresh_map < cfg.ink_threshold
-            self.ink_paint = np.repeat(self.thresh_map[:, :, None], 3, axis=2).astype(np.float32)
+            if ink_color_mode == "color":
+                hsv_c = cv2.cvtColor(self.color_img, cv2.COLOR_BGR2HSV).astype(np.float32)
+                hsv_c[:, :, 1] = np.clip(hsv_c[:, :, 1] * 1.3, 0, 255)
+                hsv_c[:, :, 2] = np.clip(hsv_c[:, :, 2] * 0.55, 0, 255)
+                self.ink_paint = cv2.cvtColor(hsv_c.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32)
+            else:
+                self.ink_paint = np.repeat(self.thresh_map[:, :, None], 3, axis=2).astype(np.float32)
 
             if cfg.match_bg:
                 self._match_original_background()
@@ -158,14 +185,19 @@ class RegionStreamRenderer:
         self.drawn = np.empty((self.out_h, self.out_w, 3), dtype=np.float32)
         self.drawn[...] = self.canvas_bgr.astype(np.float32)
 
-        # 笔尖覆盖
+        # 笔尖覆盖 (Xử lý đa dạng loại bút)
         self.tip: sr.TipOverlay | None = None
-        if not bare_tip:
-            hand_data = sr._load_hand(hand_png, cfg.target_hand_height) if hand_png else None
-            ax, ay = cfg.tip_anchor_x, cfg.tip_anchor_y
+        pen_type = getattr(cfg, "pen_type", "pencil")
+        if pen_type != "none" and not bare_tip:
+            resolved_hand = PEN_MAP.get(pen_type)
+            if resolved_hand is None or not resolved_hand.exists():
+                resolved_hand = hand_png if (hand_png and Path(hand_png).exists()) else DEFAULT_HAND
+            hand_data = sr._load_hand(resolved_hand, cfg.target_hand_height)
             if hand_data is None:
                 hand_data = sr._procedural_tip(cfg.target_hand_height)
                 ax, ay = 0.5, 0.70
+            else:
+                ax, ay = cfg.tip_anchor_x, cfg.tip_anchor_y
             self.tip = sr.TipOverlay(hand_data[0], hand_data[1], tip_anchor_x=ax, tip_anchor_y=ay)
 
     # 采样原图四角，把接近背景色的像素替换为画布底色
@@ -434,7 +466,25 @@ class RegionStreamRenderer:
 
         try:
             color_timing = getattr(cfg, "color_timing", "sync")
-            if color_timing == "after-all":
+            if color_timing in ("direct", "color-direct"):
+                # Kiểu 1: Vẽ tranh màu trực tiếp (Cọ / Bút vẽ màu sống động từ đầu đến cuối)
+                for idx, element in enumerate(elements):
+                    reveal = element["reveal"]
+                    start_ms = reveal["startMs"]
+                    dur_ms = reveal["durationMs"]
+                    fill_static(start_ms)
+
+                    allowed = self._allowed_mask(element, elements[idx + 1:])
+                    color_frames = max(1, round(dur_ms * cfg.fps / 1000))
+
+                    if cfg.color_fill == "contour-wipe":
+                        self._wash_contour(writer, color_frames, allowed)
+                    else:
+                        path = self._region_grid_path(allowed)
+                        centers = [self._cell_center(c) for c in path] if path else []
+                        self._wash_brush(writer, color_frames, centers, allowed)
+                    cur_ms += color_frames * ms_per_frame
+            elif color_timing == "after-all":
                 # Kiểu 2B: Vẽ toàn bộ nét phác thảo của tất cả các vùng trước, sau đó mới tô màu
                 color_tasks = []
                 for idx, element in enumerate(elements):
@@ -572,13 +622,17 @@ def _parse_args(argv=None):
     p.add_argument("output", help="输出 MP4 路径")
     p.add_argument("hand", nargs="?", default=str(DEFAULT_HAND), help="手部素材 PNG（默认内置）")
     p.add_argument("--total-ms", type=int, default=None, help="总时长；缺省用标注 sceneDurationMs")
-    p.add_argument("--bare-tip", action="store_true", help="不叠加笔尖/手部")
+    p.add_argument("--pen-type", default="pencil", choices=["pencil", "brush", "marker", "classic", "none"],
+                   help="Loại bút vẽ: pencil (chì gỗ) | brush (cọ màu) | marker (bút dạ) | classic (hoạt hình) | none (không tay)")
+    p.add_argument("--ink-color-mode", default="color", choices=["color", "gray"],
+                   help="Chế độ màu nét vẽ: color (màu theo ảnh) | gray (chì đen)")
+    p.add_argument("--bare-tip", action="store_true", help="Không vẽ tay / Chỉ vẽ nét")
     p.add_argument("--ink-path", default="grid", choices=["grid", "skeleton"],
                    help="笔迹路径: grid 网格(默认); skeleton 骨架追踪")
     p.add_argument("--color-fill", default="contour-wipe", choices=["contour-wipe", "brush"],
                    help="上色: contour-wipe 轮廓扫描(默认); brush 沿轨迹刷")
-    p.add_argument("--color-timing", default="sync", choices=["sync", "after-all"],
-                   help="上色时机: sync 随画随上色; after-all 画完所有线稿后再全局上色")
+    p.add_argument("--color-timing", default="direct", choices=["direct", "color-direct", "sync", "after-all"],
+                   help="上色时机: direct (vẽ màu trực tiếp) | sync (vẽ nét tới đâu tô màu tới đó) | after-all (vẽ hết nét mới tô)")
     p.add_argument("--aspect-ratio", default="auto", choices=["auto", "original", "9:16", "16:9", "1:1", "4:5"],
                    help="输出比例: auto(原图比例) | 9:16 | 16:9 | 1:1 | 4:5")
     p.add_argument("--pause", default="heavy", choices=["heavy", "auto", "light", "off"],
@@ -606,6 +660,8 @@ def _build_cfg(args) -> sr.Config:
     kw["color_timing"] = args.color_timing
     kw["aspect_ratio"] = args.aspect_ratio
     kw["pause_mode"] = args.pause
+    kw["pen_type"] = args.pen_type
+    kw["ink_color_mode"] = args.ink_color_mode
     return sr.Config(**kw)
 
 

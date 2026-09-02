@@ -79,8 +79,10 @@ class Config:
     steps_per_frame: int = 4       # 每帧推进的落点数基准
     # ── contour-wipe 上色模式专用 ──
     color_fill: str = "contour-wipe"  # 上色风格: "contour-wipe" 轮廓感知自上而下扫描(默认) | "brush" 沿轨迹刷
-    color_timing: str = "sync"        # 上色时机: "sync" 随画随上色 | "after-all" 画完所有线稿后再全局上色
+    color_timing: str = "sync"        # 上色时机: "direct" vẽ màu trực tiếp | "sync" vẽ nét màu tới đâu tô tới đó | "after-all" vẽ xong hết mới tô
     aspect_ratio: str = "auto"        # 视频比例: "auto" 原图比例 | "9:16" | "16:9" | "1:1" | "4:5"
+    ink_color_mode: str = "color"     # 墨迹颜色: "color" nét mực màu theo ảnh gốc | "gray" nét chì đen
+    pen_type: str = "pencil"          # Loại bút: "pencil", "brush", "marker", "classic", "none"
     wipe_decay: float = 0.86       # 阻力场逐行向下衰减系数（半衰期≈4.6px）
     wipe_delay_ratio: float = 0.04  # 轮廓处前沿被扣减的像素比例（×h，钳制到[12,52]）
     wipe_blocks: int = 18          # 笔尖横向来回扫动的趟数

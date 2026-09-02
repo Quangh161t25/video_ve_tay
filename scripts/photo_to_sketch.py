@@ -14,22 +14,29 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 def photo_to_sketch(img_bgr, bg_hex="#F5EBD7", stroke_intensity=1.1):
-    # 1. Chuyển sang ảnh xám và khử nhiễu
-    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    smooth = cv2.bilateralFilter(gray, 7, 50, 50)
+    # 1. Khử nhiễu nhưng giữ cạnh sắc nét bằng Bilateral filter
+    smooth = cv2.bilateralFilter(img_bgr, 9, 75, 75)
+    gray = cv2.cvtColor(smooth, cv2.COLOR_BGR2GRAY)
     
-    # 2. Tạo nét đổ bóng bút chì (Dodge blend)
-    inv = 255 - smooth
-    blur = cv2.GaussianBlur(inv, (21, 21), 0)
-    sketch = cv2.divide(smooth, 255 - blur, scale=256.0)
+    # 2. Trích xuất đường viền sắc sảo
+    edges = cv2.Canny(gray, 35, 95)
     
-    # 3. Thêm đường viền nét chì sắc nét (Canny edge)
-    edges = cv2.Canny(smooth, 30, 100)
-    edges_inv = 255 - edges
+    # Lọc bỏ các đốm nhiễu hạt vụn li ti (< 12px) để nét vẽ tinh gọn, tự nhiên
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(edges, connectivity=8)
+    clean_edges = np.zeros_like(edges)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= 12:
+            clean_edges[labels == i] = 255
+            
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+    dilated_edges = cv2.dilate(clean_edges, kernel, iterations=1)
     
-    # Kết hợp nét vẽ và đổ bóng chì
-    combined = np.minimum(sketch, edges_inv)
-    combined = np.clip((combined.astype(np.float32) / 255.0) ** stroke_intensity * 255.0, 0, 255).astype(np.uint8)
+    # 3. Phủ bóng chì mỹ thuật tự nhiên (không tạo viền tối lem nhem)
+    adapt = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 21, 8)
+    shading = np.where(adapt < 128, 175, 255).astype(np.uint8)
+    
+    # Kết hợp nét vẽ chính và đánh bóng nhẹ
+    combined = np.where(dilated_edges > 0, 30, shading)
     
     # 4. Trộn lên nền giấy ấm #F5EBD7
     r_bg = int(bg_hex[1:3], 16)

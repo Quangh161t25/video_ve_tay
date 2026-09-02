@@ -71,10 +71,23 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                 env = os.environ.copy()
                 env["PYTHONIOENCODING"] = "utf-8"
 
-                style_mode = data.get("style_mode", "photo_sync")
+                pen_type = data.get("pen_type", "pencil")
+                style_mode = data.get("style_mode", "color_direct")
                 render_img_path = img_path
-                # Nếu người dùng chọn kiểu Phác thảo (Sketch)
-                if style_mode == "sketch":
+
+                # Cấu hình timing và màu mực
+                if style_mode == "color_direct":
+                    color_timing = "direct"
+                    ink_color_mode = "color"
+                elif style_mode == "color_ink_sync":
+                    color_timing = "sync"
+                    ink_color_mode = "color"
+                elif style_mode == "photo_after_all":
+                    color_timing = "after-all"
+                    ink_color_mode = "gray"
+                elif style_mode == "sketch":
+                    color_timing = "sync"
+                    ink_color_mode = "gray"
                     sketch_path = img_path.parent / f"{img_path.stem}_sketch.png"
                     subprocess.run([
                         str(venv_py),
@@ -84,8 +97,10 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     ], env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
                     if sketch_path.exists():
                         render_img_path = sketch_path
+                else: # photo_sync
+                    color_timing = "sync"
+                    ink_color_mode = "gray"
 
-                color_timing = "after-all" if style_mode == "photo_after_all" else "sync"
                 aspect_ratio = data.get("aspect_ratio", "auto")
                 cmd = [
                     str(venv_py),
@@ -94,6 +109,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     str(ann_path),
                     str(out_path),
                     str(hand_path),
+                    "--pen-type", pen_type,
+                    "--ink-color-mode", ink_color_mode,
                     "--ink-path", data.get("ink_path", "grid"),
                     "--color-fill", data.get("color_fill", "contour-wipe"),
                     "--color-timing", color_timing,
@@ -124,7 +141,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(body)
                 scenes = data.get("scenes", [])
-                style_mode = data.get("style_mode", "photo_sync")
+                pen_type = data.get("pen_type", "pencil")
+                style_mode = data.get("style_mode", "color_direct")
                 aspect_ratio = data.get("aspect_ratio", "auto")
                 merge_all = data.get("merge", True)
                 
@@ -134,7 +152,7 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
 
                 env = os.environ.copy()
                 env["PYTHONIOENCODING"] = "utf-8"
-                hand_path = ROOT_DIR / "assets" / "drawing-hand.png"
+                hand_path = ROOT_DIR / "assets" / "hand_pencil.png"
                 upload_dir = ROOT_DIR / "uploads"
                 upload_dir.mkdir(parents=True, exist_ok=True)
                 
@@ -170,7 +188,18 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         ann_path.write_text(json.dumps(sc["annotationData"], ensure_ascii=False, indent=2), encoding="utf-8")
                     
                     render_img = img_path
-                    if style_mode == "sketch":
+                    if style_mode == "color_direct":
+                        color_timing = "direct"
+                        ink_color_mode = "color"
+                    elif style_mode == "color_ink_sync":
+                        color_timing = "sync"
+                        ink_color_mode = "color"
+                    elif style_mode == "photo_after_all":
+                        color_timing = "after-all"
+                        ink_color_mode = "gray"
+                    elif style_mode == "sketch":
+                        color_timing = "sync"
+                        ink_color_mode = "gray"
                         sketch_path = img_path.parent / f"{img_path.stem}_sketch.png"
                         subprocess.run([
                             str(venv_py), str(ROOT_DIR / "scripts" / "photo_to_sketch.py"),
@@ -178,8 +207,10 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         ], env=env, capture_output=True, text=True, encoding="utf-8", errors="replace")
                         if sketch_path.exists():
                             render_img = sketch_path
+                    else: # photo_sync
+                        color_timing = "sync"
+                        ink_color_mode = "gray"
                             
-                    color_timing = "after-all" if style_mode == "photo_after_all" else "sync"
                     cmd = [
                         str(venv_py),
                         str(ROOT_DIR / "scripts" / "render_stream_whiteboard.py"),
@@ -187,6 +218,8 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                         str(ann_path),
                         str(out_path),
                         str(hand_path),
+                        "--pen-type", pen_type,
+                        "--ink-color-mode", ink_color_mode,
                         "--ink-path", "grid",
                         "--color-fill", "contour-wipe",
                         "--color-timing", color_timing,

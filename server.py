@@ -306,6 +306,7 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     server_class = getattr(http.server, "ThreadingHTTPServer", http.server.HTTPServer)
+    server_class.allow_reuse_address = True
     server = server_class(("127.0.0.1", PORT), WhiteboardHandler)
     url = f"http://127.0.0.1:{PORT}/assets/preview.html"
     print(f"========================================================")

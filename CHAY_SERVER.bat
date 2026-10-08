@@ -10,30 +10,25 @@ echo     HE THONG VE TAY HOAT HOA BANG TRANG SRT WHITEBOARD
 echo ===================================================================
 echo.
 
-:: 1. Kiem tra va giai phong port 8000 neu co tien trinh cu dang chiem
-echo [*] Kiem tra cong mang 8000...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING') do (
-    echo [!] Phat hien tien trinh cu (PID: %%a) dang chiem port 8000, dang giai phong...
-    taskkill /F /PID %%a >nul 2>&1
-)
-
-:: 2. Kiem tra moi truong Python
+:: 1. Kiem tra moi truong Python ao .venv
 if not exist "%VENV_PY%" (
     echo [!] Khong tim thay moi truong ao .venv. Dang khoi tao...
     python scripts\prepare_env.py
 )
 
-:: 3. Chay server
+:: 2. Thong bao khoi dong
 echo [*] Dang khoi dong Web Server tai http://127.0.0.1:8000 ...
-echo [OK] Trinh duyet se tu dong mo giao dien chinh!
-echo (De dung Server, hay dong cua so nay hoac nhan Ctrl+C)
+echo [OK] Trinh duyet web se tu dong duoc mo sau vai giay!
+echo.
+echo Ghi chu: De dung server, ban hay dong cua so nay hoac nhan Ctrl+C.
 echo ===================================================================
 echo.
 
+:: 3. Chay server
 "%VENV_PY%" server.py
 
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo [LOI] Server bi dung dot ngot (Ma loi: %ERRORLEVEL%).
-    pause
-)
+echo.
+echo ===================================================================
+echo [THONG BAO] Server da dung. Nhan phim bat ky de thoat.
+echo ===================================================================
+pause

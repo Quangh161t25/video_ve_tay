@@ -11,6 +11,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+import time
 import urllib.parse
 import webbrowser
 import cv2
@@ -304,10 +305,33 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
+def _free_port(port: int):
+    try:
+        res = subprocess.run(
+            ["netstat", "-ano"],
+            capture_output=True, text=True, errors="replace"
+        )
+        for line in res.stdout.splitlines():
+            if f":{port} " in line and "LISTENING" in line:
+                parts = line.strip().split()
+                pid = int(parts[-1])
+                if pid > 0 and pid != os.getpid():
+                    print(f"[*] Dang giai phong port {port} tu tien trinh PID {pid}...")
+                    subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True)
+                    time.sleep(0.5)
+    except Exception:
+        pass
+
 def main():
+    _free_port(PORT)
     server_class = getattr(http.server, "ThreadingHTTPServer", http.server.HTTPServer)
     server_class.allow_reuse_address = True
-    server = server_class(("127.0.0.1", PORT), WhiteboardHandler)
+    try:
+        server = server_class(("127.0.0.1", PORT), WhiteboardHandler)
+    except OSError:
+        _free_port(PORT)
+        time.sleep(1)
+        server = server_class(("127.0.0.1", PORT), WhiteboardHandler)
     url = f"http://127.0.0.1:{PORT}/assets/preview.html"
     print(f"========================================================")
     print(f"  SRT Whiteboard Web Server dang chay tai:")

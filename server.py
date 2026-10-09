@@ -128,8 +128,14 @@ class WhiteboardHandler(http.server.SimpleHTTPRequestHandler):
                     rel_output = out_path.relative_to(ROOT_DIR).as_posix()
                     resp = {"status": "ok", "message": "Render thành công", "output": rel_output, "downloadUrl": "/" + rel_output}
                 else:
-                    resp = {"status": "error", "message": "Lỗi render: " + proc.stderr.strip()[:300]}
+                    err_msg = proc.stderr.strip()
+                    print(f"\n[ERR] Lỗi render:\n{err_msg}\n")
+                    # Lấy các dòng cuối của traceback để hiển thị lỗi chính xác nhất
+                    err_lines = err_msg.splitlines()
+                    summary_err = "\n".join(err_lines[-5:]) if len(err_lines) > 5 else err_msg
+                    resp = {"status": "error", "message": f"Lỗi render: {summary_err}"}
             except Exception as e:
+                print(f"\n[ERR] Exception: {e}\n")
                 resp = {"status": "error", "message": str(e)}
 
             self.send_response(200)

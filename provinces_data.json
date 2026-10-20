@@ -1,0 +1,514 @@
+[
+  {
+    "id": 1,
+    "province": "Bắc Giang",
+    "region": "Miền Bắc",
+    "landmark": "Chùa Tây Yên Tử",
+    "outfit": "Áo thun ôm màu kem trễ vai quyến rũ, chân váy linen xẻ tà, túi xách da đeo chéo",
+    "status": "completed"
+  },
+  {
+    "id": 2,
+    "province": "Hà Nội",
+    "region": "Miền Bắc",
+    "landmark": "Hồ Hoàn Kiếm & Cầu Thê Húc",
+    "outfit": "Áo dài trắng nữ sinh truyền thống thướt tha, nón lá cầm tay, tóc xõa dịu dàng",
+    "status": "pending"
+  },
+  {
+    "id": 3,
+    "province": "Hà Giang",
+    "region": "Miền Bắc",
+    "landmark": "Đèo Mã Pì Lèng & Hẻm Tu Sản",
+    "outfit": "Set váy thổ cẩm H Mông hoa văn rực rỡ cách tân hở vai, hoa tai bạc bản lớn",
+    "status": "pending"
+  },
+  {
+    "id": 4,
+    "province": "Lào Cai (Sa Pa)",
+    "region": "Miền Bắc",
+    "landmark": "Đỉnh Fansipan & Bản Cát Cát",
+    "outfit": "Áo len ôm cổ lọ màu be, áo khoác dạ măng tô dài, mũ nồi len vintage",
+    "status": "pending"
+  },
+  {
+    "id": 5,
+    "province": "Quảng Ninh",
+    "region": "Miền Bắc",
+    "landmark": "Vịnh Hạ Long trên du thuyền",
+    "outfit": "Váy maxi hai dây đi biển xẻ tà màu xanh ngọc bích, kính râm thời thượng",
+    "status": "pending"
+  },
+  {
+    "id": 6,
+    "province": "Ninh Bình",
+    "region": "Miền Bắc",
+    "landmark": "Quần thể Tràng An & Đỉnh Hang Múa",
+    "outfit": "Váy lụa đỏ cổ trang cách tân thướt tha tung bay trong gió trên đỉnh núi",
+    "status": "pending"
+  },
+  {
+    "id": 7,
+    "province": "Bắc Ninh",
+    "region": "Miền Bắc",
+    "landmark": "Làng quan họ & Chùa Dâu",
+    "outfit": "Áo tứ thân mớ ba mớ bảy cách điệu duyên dáng, yếm đào lụa tơ tằm",
+    "status": "pending"
+  },
+  {
+    "id": 8,
+    "province": "Cao Bằng",
+    "region": "Miền Bắc",
+    "landmark": "Thác Bản Giốc hùng vĩ",
+    "outfit": "Trang phục vải chàm Tày cách tân ôm eo thon, khăn vấn đầu tinh xảo",
+    "status": "pending"
+  },
+  {
+    "id": 9,
+    "province": "Sơn La (Mộc Châu)",
+    "region": "Miền Bắc",
+    "landmark": "Đồi chè trái tim & Rừng mơ tuyết",
+    "outfit": "Váy hoa nhí xòe mùa xuân ngọt ngào phối áo khoác cardigan len mỏng",
+    "status": "pending"
+  },
+  {
+    "id": 10,
+    "province": "Hải Phòng",
+    "region": "Miền Bắc",
+    "landmark": "Đảo Cát Bà & Vịnh Lan Hạ",
+    "outfit": "Set áo croptop thể thao năng động phối quần short jean cá tính",
+    "status": "pending"
+  },
+  {
+    "id": 11,
+    "province": "Thái Nguyên",
+    "region": "Miền Bắc",
+    "landmark": "Đồi chè Tân Cương bạt ngàn",
+    "outfit": "Váy sơ mi thắt đai eo màu xanh pastel thanh lịch, nón lá nhỏ",
+    "status": "pending"
+  },
+  {
+    "id": 12,
+    "province": "Lạng Sơn",
+    "region": "Miền Bắc",
+    "landmark": "Đỉnh Mẫu Sơn mờ sương & Chợ Kỳ Lừa",
+    "outfit": "Áo phao lông vũ ấm áp màu trắng tuyết phối bốt da cao cổ",
+    "status": "pending"
+  },
+  {
+    "id": 13,
+    "province": "Yên Bái",
+    "region": "Miền Bắc",
+    "landmark": "Ruộng bậc thang Mù Cang Chải",
+    "outfit": "Váy xòe bohemian họa tiết thổ cẩm vàng lúa chín rực rỡ",
+    "status": "pending"
+  },
+  {
+    "id": 14,
+    "province": "Tuyên Quang",
+    "region": "Miền Bắc",
+    "landmark": "Hồ thủy điện Na Hang sơn thủy",
+    "outfit": "Váy suông lụa trắng nhẹ nhàng ngắm cảnh trên du thuyền lòng hồ",
+    "status": "pending"
+  },
+  {
+    "id": 15,
+    "province": "Điện Biên",
+    "region": "Miền Bắc",
+    "landmark": "Cánh đồng Mường Thanh & Tượng đài",
+    "outfit": "Trang phục áo cóm Thái trắng đính hàng cúc bạc tôn vòng eo thon",
+    "status": "pending"
+  },
+  {
+    "id": 16,
+    "province": "Lai Châu",
+    "region": "Miền Bắc",
+    "landmark": "Đèo Ô Quy Hồ săn hoàng hôn",
+    "outfit": "Set đồ dã ngoại phượt ấm áp: Áo khoác hoodie nỉ phối quần jogger tôn dáng",
+    "status": "pending"
+  },
+  {
+    "id": 17,
+    "province": "Bắc Kạn",
+    "region": "Miền Bắc",
+    "landmark": "Hồ Ba Bể xanh biếc",
+    "outfit": "Áo bà ba cách điệu miền bắc phối quần ống rộng bay bổng trên thuyền độc mộc",
+    "status": "pending"
+  },
+  {
+    "id": 18,
+    "province": "Phú Thọ",
+    "region": "Miền Bắc",
+    "landmark": "Đền Hùng cội nguồn dân tộc",
+    "outfit": "Áo dài lụa thêu họa tiết chim lạc cổ truyền trang nghiêm, quý phái",
+    "status": "pending"
+  },
+  {
+    "id": 19,
+    "province": "Vĩnh Phúc",
+    "region": "Miền Bắc",
+    "landmark": "Thị trấn Tam Đảo mờ sương",
+    "outfit": "Set váy blazer dạ kẻ sành điệu như tiểu thư châu Âu",
+    "status": "pending"
+  },
+  {
+    "id": 20,
+    "province": "Hải Dương",
+    "region": "Miền Bắc",
+    "landmark": "Côn Sơn - Kiếp Bạc",
+    "outfit": "Áo dài cổ phục Ngũ thân lụa tơ tằm thanh nhã, đoan trang",
+    "status": "pending"
+  },
+  {
+    "id": 21,
+    "province": "Hưng Yên",
+    "region": "Miền Bắc",
+    "landmark": "Phố Hiến cổ kính & Chùa Chuông",
+    "outfit": "Váy yếm lụa sen phối áo cánh mỏng thêu hoa nhã nhặn",
+    "status": "pending"
+  },
+  {
+    "id": 22,
+    "province": "Thái Bình",
+    "region": "Miền Bắc",
+    "landmark": "Biển vô cực Thụy Xuân đón bình minh",
+    "outfit": "Váy lụa đỏ thướt tha in bóng xuống mặt nước biển phẳng lặng như gương",
+    "status": "pending"
+  },
+  {
+    "id": 23,
+    "province": "Hà Nam",
+    "region": "Miền Bắc",
+    "landmark": "Chùa Tam Chúc non nước hữu tình",
+    "outfit": "Áo lam Phật tử cách tân thêu hoa sen trang nhã, thanh thoát",
+    "status": "pending"
+  },
+  {
+    "id": 24,
+    "province": "Nam Định",
+    "region": "Miền Bắc",
+    "landmark": "Nhà thờ đổ Hải Lý bên bờ biển",
+    "outfit": "Váy vintage màu vintage cổ điển, nón cói retro hoài niệm",
+    "status": "pending"
+  },
+  {
+    "id": 25,
+    "province": "Hòa Bình",
+    "region": "Miền Bắc",
+    "landmark": "Thung lũng Mai Châu thanh bình",
+    "outfit": "Váy xòe Mường thêu viền cạp hoa văn hình rồng độc đáo",
+    "status": "pending"
+  },
+  {
+    "id": 26,
+    "province": "Thanh Hóa",
+    "region": "Miền Trung",
+    "landmark": "Thành Nhà Hồ & Bãi biển Sầm Sơn",
+    "outfit": "Váy maxi hai dây trắng tinh khôi dạo bước trên bờ cát",
+    "status": "pending"
+  },
+  {
+    "id": 27,
+    "province": "Nghệ An",
+    "region": "Miền Trung",
+    "landmark": "Làng Sen quê Bác & Đảo chè Thanh Chương",
+    "outfit": "Áo dài lụa sen hồng phấn duyên dáng, e ấp",
+    "status": "pending"
+  },
+  {
+    "id": 28,
+    "province": "Hà Tĩnh",
+    "region": "Miền Trung",
+    "landmark": "Ngã ba Đồng Lộc & Biển Thiên Cầm",
+    "outfit": "Set áo sơ mi linen trắng phối quần culottes trang nhã",
+    "status": "pending"
+  },
+  {
+    "id": 29,
+    "province": "Quảng Bình",
+    "region": "Miền Trung",
+    "landmark": "Động Phong Nha & Hang Sơn Đoòng",
+    "outfit": "Trang phục thám hiểm phong cách Safari khỏe khoắn, gợi cảm",
+    "status": "pending"
+  },
+  {
+    "id": 30,
+    "province": "Quảng Trị",
+    "region": "Miền Trung",
+    "landmark": "Cầu Hiền Lương & Thành cổ Quảng Trị",
+    "outfit": "Áo dài trắng tinh khiết cài huy hiệu cờ đỏ sao vàng",
+    "status": "pending"
+  },
+  {
+    "id": 31,
+    "province": "Thừa Thiên Huế",
+    "region": "Miền Trung",
+    "landmark": "Đại Nội Huế & Chùa Thiên Mụ",
+    "outfit": "Áo dài Nhật Bình tím Huế hoàng cung quý phái, quạt trầm",
+    "status": "pending"
+  },
+  {
+    "id": 32,
+    "province": "Đà Nẵng",
+    "region": "Miền Trung",
+    "landmark": "Cầu Vàng Bà Nà Hills & Cầu Rồng",
+    "outfit": "Váy công chúa dạ hội bồng bềnh thanh thoát giữa mây trời",
+    "status": "pending"
+  },
+  {
+    "id": 33,
+    "province": "Quảng Nam (Hội An)",
+    "region": "Miền Trung",
+    "landmark": "Phố cổ Hội An rực rỡ đèn lồng",
+    "outfit": "Áo yếm lụa tơ tằm vàng hoa cúc phối quần lụa suông thanh tú",
+    "status": "pending"
+  },
+  {
+    "id": 34,
+    "province": "Quảng Ngãi",
+    "region": "Miền Trung",
+    "landmark": "Đảo Lý Sơn - Vương quốc tỏi",
+    "outfit": "Váy hai dây hoa hướng dương đón nắng biển miền Trung",
+    "status": "pending"
+  },
+  {
+    "id": 35,
+    "province": "Bình Định",
+    "region": "Miền Trung",
+    "landmark": "Eo Gió Quy Nhơn & Kỳ Co",
+    "outfit": "Set bikini len móc kết hợp áo choàng lưới khoe eo thon",
+    "status": "pending"
+  },
+  {
+    "id": 36,
+    "province": "Phú Yên",
+    "region": "Miền Trung",
+    "landmark": "Gành Đá Đĩa & Hải đăng Đại Lãnh",
+    "outfit": "Váy vàng rực rỡ đón tia bình minh đầu tiên của Tổ quốc",
+    "status": "pending"
+  },
+  {
+    "id": 37,
+    "province": "Khánh Hòa (Nha Trang)",
+    "region": "Miền Trung",
+    "landmark": "Tháp Trầm Hương & Vịnh Nha Trang",
+    "outfit": "Váy bodycon ôm sát khoe đường cong quyến rũ trên du thuyền",
+    "status": "pending"
+  },
+  {
+    "id": 38,
+    "province": "Ninh Thuận",
+    "region": "Miền Trung",
+    "landmark": "Tháp Chàm Po Klong Garai & Vườn nho",
+    "outfit": "Trang phục Chăm truyền thống dệt thổ cẩm hoa văn nổi",
+    "status": "pending"
+  },
+  {
+    "id": 39,
+    "province": "Bình Thuận",
+    "region": "Miền Trung",
+    "landmark": "Đồi cát bay Mũi Né & Cung đường biển",
+    "outfit": "Váy lụa Boho trắng cát bay bổng giữa sa mạc cát vàng",
+    "status": "pending"
+  },
+  {
+    "id": 40,
+    "province": "Kon Tum",
+    "region": "Miền Trung",
+    "landmark": "Nhà thờ gỗ Kon Tum & Cầu treo Kon Klor",
+    "outfit": "Váy thổ cẩm Ba Na dệt tay phối áo khoác mỏng cá tính",
+    "status": "pending"
+  },
+  {
+    "id": 41,
+    "province": "Gia Lai",
+    "region": "Miền Trung",
+    "landmark": "Biển Hồ Pleiku (Đôi mắt Pleiku)",
+    "outfit": "Set áo khoác da biker phối chân váy ngắn năng động ngắm hồ",
+    "status": "pending"
+  },
+  {
+    "id": 42,
+    "province": "Đắk Lắk",
+    "region": "Miền Trung",
+    "landmark": "Thác Dray Nur & Bảo tàng Cà phê Buôn Ma Thuột",
+    "outfit": "Set áo croptop & chân váy thổ cẩm Ê-đê khỏe khoắn, vòng gỗ",
+    "status": "pending"
+  },
+  {
+    "id": 43,
+    "province": "Đắk Nông",
+    "region": "Miền Trung",
+    "landmark": "Hồ Tà Đùng (Vịnh Hạ Long Tây Nguyên)",
+    "outfit": "Váy suông xanh olive hòa mình vào thiên nhiên đảo nổi",
+    "status": "pending"
+  },
+  {
+    "id": 44,
+    "province": "Lâm Đồng (Đà Lạt)",
+    "region": "Miền Trung",
+    "landmark": "Ga Đà Lạt & Đồi chè Cầu Đất",
+    "outfit": "Áo măng tô dạ kẻ caro, mũ nồi, khăn len ấm áp kiểu tiểu thư Pháp",
+    "status": "pending"
+  },
+  {
+    "id": 45,
+    "province": "TP. Hồ Chí Minh",
+    "region": "Miền Nam",
+    "landmark": "Nhà thờ Đức Bà & Tòa Landmark 81",
+    "outfit": "Váy blazer sang chảnh thời thượng, kính mắt mèo, túi xách hàng hiệu",
+    "status": "pending"
+  },
+  {
+    "id": 46,
+    "province": "Bình Dương",
+    "region": "Miền Nam",
+    "landmark": "Chùa Bà Thiên Hậu & Làng gốm Lái Thiêu",
+    "outfit": "Sườn xám cách tân ngắn tay tôn dáng thanh lịch",
+    "status": "pending"
+  },
+  {
+    "id": 47,
+    "province": "Bình Phước",
+    "region": "Miền Nam",
+    "landmark": "Rừng cao su mùa rụng lá",
+    "outfit": "Áo khoác da lộn màu nâu đất phối bốt cao cổ đón lá đỏ",
+    "status": "pending"
+  },
+  {
+    "id": 48,
+    "province": "Tây Ninh",
+    "region": "Miền Nam",
+    "landmark": "Đỉnh Núi Bà Đen săn mây",
+    "outfit": "Áo dài trắng cách tân thêu hoa mây thanh khiết nơi đỉnh núi thiêng",
+    "status": "pending"
+  },
+  {
+    "id": 49,
+    "province": "Đồng Nai",
+    "region": "Miền Nam",
+    "landmark": "Vườn quốc gia Cát Tiên & Thác Đá Hàn",
+    "outfit": "Set đồ phong cách cắm trại dã ngoại năng động, trẻ trung",
+    "status": "pending"
+  },
+  {
+    "id": 50,
+    "province": "Bà Rịa - Vũng Tàu",
+    "region": "Miền Nam",
+    "landmark": "Hải đăng Vũng Tàu & Mũi Nghinh Phong",
+    "outfit": "Váy quây ôm ngực xẻ tà bay nhẹ đón gió biển lộng gió",
+    "status": "pending"
+  },
+  {
+    "id": 51,
+    "province": "Long An",
+    "region": "Miền Nam",
+    "landmark": "Làng nổi Tân Lập & Cánh đồng sen",
+    "outfit": "Áo bà ba lụa hồng cánh sen phối quần lụa đen dịu dàng",
+    "status": "pending"
+  },
+  {
+    "id": 52,
+    "province": "Tiền Giang",
+    "region": "Miền Nam",
+    "landmark": "Cù lao Thới Sơn & Chợ nổi Cái Bè",
+    "outfit": "Áo bà ba gấm hoa vàng rực rỡ chèo xuồng ba lá",
+    "status": "pending"
+  },
+  {
+    "id": 53,
+    "province": "Bến Tre",
+    "region": "Miền Nam",
+    "landmark": "Vườn dừa bạt ngàn xứ Dừa",
+    "outfit": "Áo bà ba xanh ngọc bích mượt mà, nón lá che nghiêng duyên dáng",
+    "status": "pending"
+  },
+  {
+    "id": 54,
+    "province": "Trà Vinh",
+    "region": "Miền Nam",
+    "landmark": "Chùa Hang & Ao Bà Om cổ kính",
+    "outfit": "Trang phục truyền thống Khmer dệt chỉ vàng lộng lẫy",
+    "status": "pending"
+  },
+  {
+    "id": 55,
+    "province": "Vĩnh Long",
+    "region": "Miền Nam",
+    "landmark": "Cầu Mỹ Thuận & Vườn gốm Mang Thít",
+    "outfit": "Áo bà ba lụa đỏ gạch nung nụ cười rạng rỡ miệt vườn",
+    "status": "pending"
+  },
+  {
+    "id": 56,
+    "province": "Đồng Tháp",
+    "region": "Miền Nam",
+    "landmark": "Đồng sen Tháp Mười & Vườn quốc gia Tràm Chim",
+    "outfit": "Áo yếm lụa trắng ngồi giữa đầm sen bạt ngàn ngát hương",
+    "status": "pending"
+  },
+  {
+    "id": 57,
+    "province": "An Giang",
+    "region": "Miền Nam",
+    "landmark": "Rừng tràm Trà Sư & Chùa Koh Kas",
+    "outfit": "Áo bà ba lụa sen hồng, khăn rằn Nam Bộ buông lơi bờ vai",
+    "status": "pending"
+  },
+  {
+    "id": 58,
+    "province": "Kiên Giang (Phú Quốc)",
+    "region": "Miền Nam",
+    "landmark": "Cầu Hôn Kiss Bridge & Bãi Sao Phú Quốc",
+    "outfit": "Váy hai dây lụa satin màu cam hoàng hôn cắt xẻ gợi cảm",
+    "status": "pending"
+  },
+  {
+    "id": 59,
+    "province": "Cần Thơ",
+    "region": "Miền Nam",
+    "landmark": "Chợ nổi Cái Răng & Bến Ninh Kiều",
+    "outfit": "Áo bà ba lụa tím Cần Thơ gạo trắng nước trong đằm thắm",
+    "status": "pending"
+  },
+  {
+    "id": 60,
+    "province": "Hậu Giang",
+    "region": "Miền Nam",
+    "landmark": "Khu bảo tồn Lung Ngọc Hoàng",
+    "outfit": "Áo bà ba màu xanh lục mộc mạc bên thuyền bèo trôi",
+    "status": "pending"
+  },
+  {
+    "id": 61,
+    "province": "Sóc Trăng",
+    "region": "Miền Nam",
+    "landmark": "Chùa Dơi & Chùa Som Rong nguy nga",
+    "outfit": "Trang phục vũ nữ Apsara cách tân kiêu sa, quyến rũ",
+    "status": "pending"
+  },
+  {
+    "id": 62,
+    "province": "Bạc Liêu",
+    "region": "Miền Nam",
+    "landmark": "Cánh đồng điện gió & Nhà Công tử Bạc Liêu",
+    "outfit": "Váy xòe trắng thanh lịch tung bay dưới những cánh quạt gió khổng lồ",
+    "status": "pending"
+  },
+  {
+    "id": 63,
+    "province": "Cà Mau",
+    "region": "Miền Nam",
+    "landmark": "Mốc tọa độ Quốc gia Đất Mũi Cà Mau",
+    "outfit": "Áo cờ đỏ sao vàng phối quần short jean năng động nơi cực Nam Tổ quốc",
+    "status": "pending"
+  },
+  {
+    "id": 64,
+    "province": "Quần đảo Hoàng Sa - Trường Sa",
+    "region": "Hải Đảo",
+    "landmark": "Cột mốc chủ quyền đảo Trường Sa Lớn",
+    "outfit": "Trang phục nữ thủy thủ hải quân duyên dáng, kiên cường hướng về biển đảo",
+    "status": "pending"
+  }
+]
